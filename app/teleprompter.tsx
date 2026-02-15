@@ -11,7 +11,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import {
@@ -59,7 +59,8 @@ async function readFileContent(uri: string): Promise<string> {
 export default function Teleprompter() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [scriptText, setScriptText] = useState('');
+  const params = useLocalSearchParams<{ text?: string; title?: string }>();
+  const [scriptText, setScriptText] = useState(params.text ?? '');
   const [isEditing, setIsEditing] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(3);

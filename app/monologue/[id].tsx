@@ -96,7 +96,7 @@ export default function MonologueDetail() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.teleprompterBtn}
-            onPress={() => router.push('/teleprompter' as any)}
+            onPress={() => router.push({ pathname: '/teleprompter' as any, params: { text: monologue.text, title: monologue.title } })}
             activeOpacity={0.8}
           >
             <Text style={styles.teleprompterBtnText}>Open in Teleprompter</Text>
