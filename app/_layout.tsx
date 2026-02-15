@@ -5,6 +5,9 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Colors from "@/constants/colors";
 import { UserMonologuesProvider } from "@/providers/UserMonologuesProvider";
+import { RehearsalJournalProvider } from "@/providers/RehearsalJournalProvider";
+import { CharacterBreakdownProvider } from "@/providers/CharacterBreakdownProvider";
+import { SidesAnnotationProvider } from "@/providers/SidesAnnotationProvider";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,6 +36,9 @@ function RootLayoutNav() {
       <Stack.Screen name="warmup/[id]" options={{ title: "Warm-Up" }} />
       <Stack.Screen name="industry-glossary" options={{ title: "Industry Glossary" }} />
       <Stack.Screen name="add-monologue" options={{ title: "Add Monologue", presentation: "modal" }} />
+      <Stack.Screen name="rehearsal-journal" options={{ title: "Rehearsal Journal" }} />
+      <Stack.Screen name="character-breakdown" options={{ title: "Character Breakdown" }} />
+      <Stack.Screen name="sides-annotation" options={{ title: "Sides Annotation" }} />
     </Stack>
   );
 }
@@ -46,7 +52,13 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView>
         <UserMonologuesProvider>
-          <RootLayoutNav />
+          <RehearsalJournalProvider>
+            <CharacterBreakdownProvider>
+              <SidesAnnotationProvider>
+                <RootLayoutNav />
+              </SidesAnnotationProvider>
+            </CharacterBreakdownProvider>
+          </RehearsalJournalProvider>
         </UserMonologuesProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>

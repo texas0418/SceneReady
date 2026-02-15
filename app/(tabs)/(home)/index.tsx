@@ -18,6 +18,9 @@ import {
   Timer,
   Flame,
   FileText,
+  NotebookPen,
+  UserSearch,
+  Highlighter,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 
@@ -92,6 +95,30 @@ const tools: ToolCard[] = [
     icon: <FileText size={22} color="#4DD0E1" />,
     route: '/industry-glossary',
     gradient: ['rgba(77,208,225,0.12)', Colors.card],
+  },
+  {
+    id: 'journal',
+    title: 'Rehearsal Journal',
+    subtitle: 'Track your growth',
+    icon: <NotebookPen size={22} color="#CE93D8" />,
+    route: '/rehearsal-journal',
+    gradient: ['rgba(206,147,216,0.12)', Colors.card],
+  },
+  {
+    id: 'character',
+    title: 'Character Builder',
+    subtitle: 'Deep script analysis',
+    icon: <UserSearch size={22} color="#F48FB1" />,
+    route: '/character-breakdown',
+    gradient: ['rgba(244,143,177,0.12)', Colors.card],
+  },
+  {
+    id: 'sides',
+    title: 'Sides Annotation',
+    subtitle: 'Mark up your scripts',
+    icon: <Highlighter size={22} color="#90CAF9" />,
+    route: '/sides-annotation',
+    gradient: ['rgba(144,202,249,0.12)', Colors.card],
   },
 ];
 

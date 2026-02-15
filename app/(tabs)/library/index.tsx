@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BookOpen, FileText, ChevronRight } from 'lucide-react-native';
+import { BookOpen, FileText, ChevronRight, NotebookPen, UserSearch, Highlighter } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { monologues } from '@/mocks/monologues';
 import { glossaryTerms } from '@/mocks/glossary';
@@ -32,6 +32,33 @@ const sections = [
     route: '/industry-glossary',
     color: 'rgba(77,208,225,0.12)',
     borderColor: 'rgba(77,208,225,0.2)',
+  },
+  {
+    id: 'journal',
+    title: 'Rehearsal Journal',
+    subtitle: 'Log sessions & discoveries',
+    icon: <NotebookPen size={22} color="#CE93D8" />,
+    route: '/rehearsal-journal',
+    color: 'rgba(206,147,216,0.12)',
+    borderColor: 'rgba(206,147,216,0.2)',
+  },
+  {
+    id: 'character',
+    title: 'Character Breakdown',
+    subtitle: 'Build character profiles',
+    icon: <UserSearch size={22} color="#F48FB1" />,
+    route: '/character-breakdown',
+    color: 'rgba(244,143,177,0.12)',
+    borderColor: 'rgba(244,143,177,0.2)',
+  },
+  {
+    id: 'sides',
+    title: 'Sides Annotation',
+    subtitle: 'Mark up your scripts',
+    icon: <Highlighter size={22} color="#90CAF9" />,
+    route: '/sides-annotation',
+    color: 'rgba(144,202,249,0.12)',
+    borderColor: 'rgba(144,202,249,0.2)',
   },
 ];
 
