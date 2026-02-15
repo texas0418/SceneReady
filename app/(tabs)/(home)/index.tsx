@@ -81,22 +81,6 @@ const tools: ToolCard[] = [
     gradient: ['rgba(255,183,77,0.12)', Colors.card],
   },
   {
-    id: 'warmups',
-    title: 'Daily Warm-Ups',
-    subtitle: 'Voice & body prep',
-    icon: <Flame size={22} color="#FF8A65" />,
-    route: '/daily-warmups',
-    gradient: ['rgba(255,138,101,0.12)', Colors.card],
-  },
-  {
-    id: 'glossary',
-    title: 'Glossary',
-    subtitle: 'Industry terms',
-    icon: <FileText size={22} color="#4DD0E1" />,
-    route: '/industry-glossary',
-    gradient: ['rgba(77,208,225,0.12)', Colors.card],
-  },
-  {
     id: 'journal',
     title: 'Rehearsal Journal',
     subtitle: 'Track your growth',
@@ -119,6 +103,22 @@ const tools: ToolCard[] = [
     icon: <Highlighter size={22} color="#90CAF9" />,
     route: '/sides-annotation',
     gradient: ['rgba(144,202,249,0.12)', Colors.card],
+  },
+  {
+    id: 'warmups',
+    title: 'Daily Warm-Ups',
+    subtitle: 'Voice & body prep',
+    icon: <Flame size={22} color="#FF8A65" />,
+    route: '/daily-warmups',
+    gradient: ['rgba(255,138,101,0.12)', Colors.card],
+  },
+  {
+    id: 'glossary',
+    title: 'Glossary',
+    subtitle: 'Industry terms',
+    icon: <FileText size={22} color="#4DD0E1" />,
+    route: '/industry-glossary',
+    gradient: ['rgba(77,208,225,0.12)', Colors.card],
   },
 ];
 
