@@ -28,6 +28,7 @@ import {
   Type,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
+import { extractTextFromPDF, isPDFFile } from '@/utils/pdfExtractor';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -117,7 +118,25 @@ export default function Teleprompter() {
       console.log('Picked document:', asset.name, asset.mimeType, asset.size);
       setUploadedFileName(asset.name);
 
-      if (Platform.OS === 'web' && asset.file) {
+      const isPDF = isPDFFile(asset.name, asset.mimeType ?? undefined);
+      console.log('Is PDF:', isPDF);
+
+      if (isPDF) {
+        const text = await extractTextFromPDF(asset.uri, Platform.OS === 'web' ? asset.file : null);
+        console.log('Extracted PDF text, length:', text.length);
+        if (!text.trim()) {
+          setUploadedFileName(null);
+          setScriptText('');
+          if (Platform.OS === 'web') {
+            alert('Could not extract text from this PDF. It may be scanned/image-based. Try a text-based PDF or paste the text manually.');
+          } else {
+            const { Alert } = await import('react-native');
+            Alert.alert('PDF Error', 'Could not extract text from this PDF. It may be scanned/image-based. Try a text-based PDF or paste the text manually.');
+          }
+        } else {
+          setScriptText(text);
+        }
+      } else if (Platform.OS === 'web' && asset.file) {
         const text = await asset.file.text();
         console.log('Read file content on web, length:', text.length);
         setScriptText(text);
@@ -206,7 +225,7 @@ export default function Teleprompter() {
                 {isLoadingFile ? 'Reading file...' : 'Choose a file'}
               </Text>
               <Text style={styles.uploadBtnSubtitle}>
-                Supports .txt, .rtf, .html, .md files
+                Supports .pdf, .txt, .rtf, .html, .md files
               </Text>
             </TouchableOpacity>
             {uploadedFileName && (
