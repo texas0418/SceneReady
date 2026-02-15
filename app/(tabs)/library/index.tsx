@@ -8,10 +8,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BookOpen, Globe, FileText, ChevronRight } from 'lucide-react-native';
+import { BookOpen, FileText, ChevronRight } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { monologues } from '@/mocks/monologues';
-import { dialects } from '@/mocks/dialects';
 import { glossaryTerms } from '@/mocks/glossary';
 
 const sections = [
@@ -24,15 +23,7 @@ const sections = [
     color: 'rgba(129,199,132,0.12)',
     borderColor: 'rgba(129,199,132,0.2)',
   },
-  {
-    id: 'dialects',
-    title: 'Dialect Reference',
-    subtitle: `${dialects.length} accents with IPA guides`,
-    icon: <Globe size={22} color="#BA68C8" />,
-    route: '/dialect-reference',
-    color: 'rgba(186,104,200,0.12)',
-    borderColor: 'rgba(186,104,200,0.2)',
-  },
+
   {
     id: 'glossary',
     title: 'Industry Glossary',
@@ -95,22 +86,7 @@ export default function LibraryScreen() {
             </TouchableOpacity>
           ))}
 
-          <Text style={[styles.categoryLabel, { marginTop: 20 }]}>Popular Dialects</Text>
-          {dialects.slice(0, 3).map((dialect) => (
-            <TouchableOpacity
-              key={dialect.id}
-              style={styles.quickItem}
-              onPress={() => router.push(`/dialect/${dialect.id}` as any)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.quickDot, { backgroundColor: '#BA68C8' }]} />
-              <View style={styles.quickItemContent}>
-                <Text style={styles.quickItemTitle}>{dialect.name}</Text>
-                <Text style={styles.quickItemMeta}>{dialect.region} · {dialect.difficulty}</Text>
-              </View>
-              <ChevronRight size={16} color={Colors.textMuted} />
-            </TouchableOpacity>
-          ))}
+
         </View>
 
         <View style={{ height: 30 }} />
