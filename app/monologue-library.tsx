@@ -9,9 +9,11 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
-import { Search, Filter, X } from 'lucide-react-native';
+import { Search, Filter, X, Plus, Trash2 } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { monologues, Monologue } from '@/mocks/monologues';
+import { useUserMonologues } from '@/providers/UserMonologuesProvider';
 
 const typeFilters = ['all', 'dramatic', 'comedic', 'classical', 'contemporary'] as const;
 const genderFilters = ['all', 'male', 'female', 'neutral'] as const;
@@ -23,15 +25,31 @@ const typeColors: Record<string, string> = {
   contemporary: '#64B5F6',
 };
 
+interface DisplayMonologue extends Monologue {
+  isUserAdded?: boolean;
+}
+
 export default function MonologueLibrary() {
   const router = useRouter();
+  const { userMonologues, deleteMonologue } = useUserMonologues();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [genderFilter, setGenderFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'curated' | 'mine'>('all');
+
+  const allMonologues = useMemo((): DisplayMonologue[] => {
+    const userItems: DisplayMonologue[] = userMonologues.map((m) => ({ ...m, isUserAdded: true }));
+    const curatedItems: DisplayMonologue[] = monologues.map((m) => ({ ...m, isUserAdded: false }));
+    return [...userItems, ...curatedItems];
+  }, [userMonologues]);
 
   const filtered = useMemo(() => {
-    return monologues.filter((m) => {
+    return allMonologues.filter((m) => {
+      const matchesSource =
+        sourceFilter === 'all' ||
+        (sourceFilter === 'mine' && m.isUserAdded) ||
+        (sourceFilter === 'curated' && !m.isUserAdded);
       const matchesSearch =
         !search ||
         m.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -40,23 +58,46 @@ export default function MonologueLibrary() {
         m.tone.toLowerCase().includes(search.toLowerCase());
       const matchesType = typeFilter === 'all' || m.type === typeFilter;
       const matchesGender = genderFilter === 'all' || m.gender === genderFilter;
-      return matchesSearch && matchesType && matchesGender;
+      return matchesSearch && matchesType && matchesGender && matchesSource;
     });
-  }, [search, typeFilter, genderFilter]);
+  }, [search, typeFilter, genderFilter, sourceFilter, allMonologues]);
 
-  const renderItem = ({ item }: { item: Monologue }) => (
+  const handleDelete = (id: string, title: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    deleteMonologue(id);
+  };
+
+  const renderItem = ({ item }: { item: DisplayMonologue }) => (
     <TouchableOpacity
       style={styles.card}
       onPress={() => router.push(`/monologue/${item.id}` as any)}
       activeOpacity={0.8}
     >
       <View style={styles.cardHeader}>
-        <View style={[styles.typeBadge, { backgroundColor: `${typeColors[item.type]}20` }]}>
-          <Text style={[styles.typeBadgeText, { color: typeColors[item.type] }]}>
-            {item.type}
-          </Text>
+        <View style={styles.cardHeaderLeft}>
+          <View style={[styles.typeBadge, { backgroundColor: `${typeColors[item.type]}20` }]}>
+            <Text style={[styles.typeBadgeText, { color: typeColors[item.type] }]}>
+              {item.type}
+            </Text>
+          </View>
+          {item.isUserAdded && (
+            <View style={styles.userBadge}>
+              <Text style={styles.userBadgeText}>MY</Text>
+            </View>
+          )}
         </View>
-        <Text style={styles.duration}>{item.duration}</Text>
+        <View style={styles.cardHeaderRight}>
+          <Text style={styles.duration}>{item.duration}</Text>
+          {item.isUserAdded && (
+            <TouchableOpacity
+              onPress={() => handleDelete(item.id, item.title)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.deleteBtn}
+            >
+              <Trash2 size={14} color={Colors.error} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
       <Text style={styles.cardTitle}>{item.title}</Text>
       <Text style={styles.cardSource}>{item.source}</Text>
@@ -73,7 +114,23 @@ export default function MonologueLibrary() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Monologue Library' }} />
+      <Stack.Screen
+        options={{
+          title: 'Monologue Library',
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/add-monologue' as any);
+              }}
+              style={styles.addHeaderBtn}
+              testID="add-monologue-header-btn"
+            >
+              <Plus size={20} color={Colors.accent} />
+            </TouchableOpacity>
+          ),
+        }}
+      />
 
       <View style={styles.searchRow}>
         <View style={styles.searchInput}>
@@ -102,6 +159,20 @@ export default function MonologueLibrary() {
 
       {showFilters && (
         <View style={styles.filtersSection}>
+          <Text style={styles.filterLabel}>Source</Text>
+          <View style={styles.filterRow}>
+            {(['all', 'curated', 'mine'] as const).map((s) => (
+              <TouchableOpacity
+                key={s}
+                style={[styles.filterChip, sourceFilter === s && styles.filterChipActive]}
+                onPress={() => setSourceFilter(s)}
+              >
+                <Text style={[styles.filterChipText, sourceFilter === s && styles.filterChipTextActive]}>
+                  {s === 'all' ? 'All' : s === 'curated' ? 'Curated' : 'My Monologues'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
           <Text style={styles.filterLabel}>Type</Text>
           <View style={styles.filterRow}>
             {typeFilters.map((t) => (
@@ -142,6 +213,13 @@ export default function MonologueLibrary() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No monologues match your filters</Text>
+            <TouchableOpacity
+              style={styles.emptyAddBtn}
+              onPress={() => router.push('/add-monologue' as any)}
+            >
+              <Plus size={16} color={Colors.accent} />
+              <Text style={styles.emptyAddText}>Add your own</Text>
+            </TouchableOpacity>
           </View>
         }
       />
@@ -287,6 +365,34 @@ const styles = StyleSheet.create({
     color: Colors.accent,
     fontWeight: '500' as const,
   },
+  addHeaderBtn: {
+    padding: 4,
+  },
+  cardHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  cardHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  userBadge: {
+    backgroundColor: 'rgba(232,168,56,0.15)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  userBadgeText: {
+    fontSize: 9,
+    fontWeight: '800' as const,
+    color: Colors.accent,
+    letterSpacing: 0.5,
+  },
+  deleteBtn: {
+    padding: 4,
+  },
   emptyState: {
     alignItems: 'center',
     paddingTop: 60,
@@ -294,5 +400,20 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     color: Colors.textMuted,
+  },
+  emptyAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: Colors.spotlightStrong,
+  },
+  emptyAddText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.accent,
   },
 });

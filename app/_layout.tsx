@@ -4,6 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Colors from "@/constants/colors";
+import { UserMonologuesProvider } from "@/providers/UserMonologuesProvider";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -32,6 +33,7 @@ function RootLayoutNav() {
       <Stack.Screen name="daily-warmups" options={{ title: "Daily Warm-Ups" }} />
       <Stack.Screen name="warmup/[id]" options={{ title: "Warm-Up" }} />
       <Stack.Screen name="industry-glossary" options={{ title: "Industry Glossary" }} />
+      <Stack.Screen name="add-monologue" options={{ title: "Add Monologue", presentation: "modal" }} />
     </Stack>
   );
 }
@@ -44,7 +46,9 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView>
-        <RootLayoutNav />
+        <UserMonologuesProvider>
+          <RootLayoutNav />
+        </UserMonologuesProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>
   );

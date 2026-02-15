@@ -11,6 +11,7 @@ import { Copy, BookOpen, Clock, User } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import Colors from '@/constants/colors';
 import { monologues } from '@/mocks/monologues';
+import { useUserMonologues } from '@/providers/UserMonologuesProvider';
 
 const typeColors: Record<string, string> = {
   dramatic: '#E57373',
@@ -24,7 +25,9 @@ export default function MonologueDetail() {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
 
-  const monologue = monologues.find((m) => m.id === id);
+  const { getMonologue: getUserMonologue } = useUserMonologues();
+
+  const monologue = monologues.find((m) => m.id === id) ?? getUserMonologue(id as string) ?? null;
 
   if (!monologue) {
     return (
