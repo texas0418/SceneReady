@@ -8,9 +8,12 @@ import {
   Animated,
   Dimensions,
   ScrollView,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as DocumentPicker from 'expo-document-picker';
 import {
   Play,
   Pause,
@@ -20,10 +23,37 @@ import {
   Minus,
   Plus,
   FlipHorizontal,
+  FileUp,
+  FileText,
+  Type,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+type InputMode = 'text' | 'document';
+
+async function readFileContent(uri: string): Promise<string> {
+  if (Platform.OS === 'web') {
+    return '';
+  }
+  try {
+    const { File } = await import('expo-file-system');
+    const file = new File(uri);
+    const content = await file.text();
+    return content;
+  } catch (error) {
+    console.log('Error reading file with new API, trying legacy:', error);
+    try {
+      const FileSystemLegacy = await import('expo-file-system/legacy');
+      const content = await FileSystemLegacy.readAsStringAsync(uri);
+      return content;
+    } catch (legacyError) {
+      console.log('Error reading file with legacy API:', legacyError);
+      throw legacyError;
+    }
+  }
+}
 
 export default function Teleprompter() {
   const router = useRouter();
@@ -36,6 +66,9 @@ export default function Teleprompter() {
   const [isMirrored, setIsMirrored] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [inputMode, setInputMode] = useState<InputMode>('text');
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [isLoadingFile, setIsLoadingFile] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -64,6 +97,42 @@ export default function Teleprompter() {
     }
     return () => stopScrolling();
   }, [isPlaying, startScrolling, stopScrolling]);
+
+  const handlePickDocument = useCallback(async () => {
+    try {
+      setIsLoadingFile(true);
+      console.log('Opening document picker...');
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['text/plain', 'text/html', 'text/rtf', 'text/markdown', 'application/rtf', 'application/pdf'],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) {
+        console.log('Document picking cancelled');
+        setIsLoadingFile(false);
+        return;
+      }
+
+      const asset = result.assets[0];
+      console.log('Picked document:', asset.name, asset.mimeType, asset.size);
+      setUploadedFileName(asset.name);
+
+      if (Platform.OS === 'web' && asset.file) {
+        const text = await asset.file.text();
+        console.log('Read file content on web, length:', text.length);
+        setScriptText(text);
+      } else {
+        const text = await readFileContent(asset.uri);
+        console.log('Read file content on native, length:', text.length);
+        setScriptText(text);
+      }
+    } catch (error) {
+      console.log('Error picking document:', error);
+      setUploadedFileName(null);
+    } finally {
+      setIsLoadingFile(false);
+    }
+  }, []);
 
   const handleStart = () => {
     if (!scriptText.trim()) return;
@@ -97,15 +166,69 @@ export default function Teleprompter() {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.modeSwitcher}>
+          <TouchableOpacity
+            style={[styles.modeTab, inputMode === 'text' && styles.modeTabActive]}
+            onPress={() => setInputMode('text')}
+            testID="mode-text"
+          >
+            <Type size={16} color={inputMode === 'text' ? Colors.accent : Colors.textMuted} />
+            <Text style={[styles.modeTabText, inputMode === 'text' && styles.modeTabTextActive]}>
+              Plain Text
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modeTab, inputMode === 'document' && styles.modeTabActive]}
+            onPress={() => setInputMode('document')}
+            testID="mode-document"
+          >
+            <FileText size={16} color={inputMode === 'document' ? Colors.accent : Colors.textMuted} />
+            <Text style={[styles.modeTabText, inputMode === 'document' && styles.modeTabTextActive]}>
+              Upload File
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {inputMode === 'document' && (
+          <View style={styles.uploadSection}>
+            <TouchableOpacity
+              style={styles.uploadBtn}
+              onPress={handlePickDocument}
+              disabled={isLoadingFile}
+              testID="upload-document-btn"
+            >
+              {isLoadingFile ? (
+                <ActivityIndicator size="small" color={Colors.accent} />
+              ) : (
+                <FileUp size={28} color={Colors.accent} />
+              )}
+              <Text style={styles.uploadBtnTitle}>
+                {isLoadingFile ? 'Reading file...' : 'Choose a file'}
+              </Text>
+              <Text style={styles.uploadBtnSubtitle}>
+                Supports .txt, .rtf, .html, .md files
+              </Text>
+            </TouchableOpacity>
+            {uploadedFileName && (
+              <View style={styles.fileInfoRow}>
+                <FileText size={14} color={Colors.accent} />
+                <Text style={styles.fileInfoText} numberOfLines={1}>
+                  {uploadedFileName}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
         <TextInput
           style={styles.editInput}
-          placeholder="Paste your script here..."
+          placeholder={inputMode === 'document' ? 'File content will appear here. You can also edit it...' : 'Paste your script here...'}
           placeholderTextColor={Colors.textMuted}
           value={scriptText}
           onChangeText={setScriptText}
           multiline
           textAlignVertical="top"
-          autoFocus
+          autoFocus={inputMode === 'text'}
           testID="teleprompter-input"
         />
       </View>
@@ -261,6 +384,73 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textPrimary,
     lineHeight: 24,
+  },
+  modeSwitcher: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginTop: 8,
+    backgroundColor: Colors.backgroundLight,
+    borderRadius: 10,
+    padding: 3,
+  },
+  modeTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  modeTabActive: {
+    backgroundColor: Colors.card,
+  },
+  modeTabText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: Colors.textMuted,
+  },
+  modeTabTextActive: {
+    color: Colors.accent,
+  },
+  uploadSection: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    gap: 10,
+  },
+  uploadBtn: {
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    borderRadius: 14,
+    paddingVertical: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.spotlight,
+    gap: 8,
+  },
+  uploadBtnTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: Colors.textPrimary,
+  },
+  uploadBtnSubtitle: {
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
+  fileInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.card,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  fileInfoText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    flex: 1,
   },
   prompterContainer: {
     flex: 1,
