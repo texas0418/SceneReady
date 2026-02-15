@@ -16,7 +16,6 @@ import {
   Monitor,
   BookOpen,
   Timer,
-  Globe,
   Flame,
   FileText,
 } from 'lucide-react-native';
@@ -77,14 +76,6 @@ const tools: ToolCard[] = [
     icon: <Timer size={22} color="#FFB74D" />,
     route: '/cold-read-timer',
     gradient: ['rgba(255,183,77,0.12)', Colors.card],
-  },
-  {
-    id: 'dialects',
-    title: 'Dialects',
-    subtitle: 'Accent reference',
-    icon: <Globe size={22} color="#BA68C8" />,
-    route: '/dialect-reference',
-    gradient: ['rgba(186,104,200,0.12)', Colors.card],
   },
   {
     id: 'warmups',

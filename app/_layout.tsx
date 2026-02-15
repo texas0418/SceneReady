@@ -28,8 +28,7 @@ function RootLayoutNav() {
       <Stack.Screen name="monologue-library" options={{ title: "Monologue Library" }} />
       <Stack.Screen name="monologue/[id]" options={{ title: "Monologue" }} />
       <Stack.Screen name="cold-read-timer" options={{ title: "Cold Read Timer" }} />
-      <Stack.Screen name="dialect-reference" options={{ title: "Dialect Reference" }} />
-      <Stack.Screen name="dialect/[id]" options={{ title: "Dialect Details" }} />
+
       <Stack.Screen name="daily-warmups" options={{ title: "Daily Warm-Ups" }} />
       <Stack.Screen name="warmup/[id]" options={{ title: "Warm-Up" }} />
       <Stack.Screen name="industry-glossary" options={{ title: "Industry Glossary" }} />
