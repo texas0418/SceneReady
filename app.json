@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sceneready.app",
-      "buildNumber": "5",
+      "buildNumber": "6",
       "infoPlist": {
         "NSSpeechRecognitionUsageDescription": "SceneReady uses speech synthesis to read scene partner lines aloud.",
         "CFBundleAllowMixedLocalizations": true,

@@ -8,7 +8,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { Search, X, ChevronDown, ChevronUp   ChevronLeft,
+import { Search, X, ChevronDown, ChevronUp, ChevronLeft,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { glossaryTerms, GlossaryTerm } from '@/mocks/glossary';
