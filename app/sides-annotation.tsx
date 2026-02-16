@@ -10,13 +10,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import {
   Plus,
   FileText,
+  FileUp,
   Trash2,
   ChevronRight,
+  ChevronLeft,
   X,
   Bookmark,
   Zap,
@@ -24,8 +27,10 @@ import {
   Heart,
   Bold,
 } from 'lucide-react-native';
+import * as DocumentPicker from 'expo-document-picker';
 import Colors from '@/constants/colors';
 import { useSidesAnnotation, Annotation, AnnotatedSide } from '@/providers/SidesAnnotationProvider';
+import { extractTextFromPDF, isPDFFile } from '@/utils/pdfExtractor';
 
 const ANNOTATION_TYPES: { value: Annotation['type']; label: string; color: string; icon: React.ReactNode }[] = [
   { value: 'beat', label: 'Beat', color: '#E8A838', icon: <Bookmark size={16} color="#E8A838" /> },
@@ -37,11 +42,69 @@ const ANNOTATION_TYPES: { value: Annotation['type']; label: string; color: strin
 
 export default function SidesAnnotationScreen() {
   const { sides, addSide, addAnnotation, removeAnnotation, deleteSide } = useSidesAnnotation();
+  const router = useRouter();
   const [mode, setMode] = useState<'list' | 'add' | 'view'>('list');
   const [activeSideId, setActiveSideId] = useState<string | null>(null);
 
   const [newTitle, setNewTitle] = useState('');
   const [newScript, setNewScript] = useState('');
+  const [isLoadingFile, setIsLoadingFile] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+
+  const handlePickDocument = useCallback(async () => {
+    try {
+      setIsLoadingFile(true);
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'text/plain', 'text/html', 'text/rtf', 'text/markdown', 'application/rtf'],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) {
+        setIsLoadingFile(false);
+        return;
+      }
+
+      const asset = result.assets[0];
+      setUploadedFileName(asset.name);
+
+      // Extract title from filename (remove extension)
+      const titleFromFile = asset.name.replace(/\.[^.]+$/, '');
+      if (!newTitle.trim()) {
+        setNewTitle(titleFromFile);
+      }
+
+      const isPDF = isPDFFile(asset.name, asset.mimeType ?? undefined);
+
+      if (isPDF) {
+        const text = await extractTextFromPDF(asset.uri, Platform.OS === 'web' ? asset.file : null);
+        if (!text.trim()) {
+          setUploadedFileName(null);
+          Alert.alert('PDF Error', 'Could not extract text from this PDF. It may be scanned/image-based. Try a text-based PDF or paste the text manually.');
+        } else {
+          setNewScript(text);
+        }
+      } else if (Platform.OS === 'web' && asset.file) {
+        const text = await asset.file.text();
+        setNewScript(text);
+      } else {
+        try {
+          const { File } = await import('expo-file-system');
+          const file = new File(asset.uri);
+          const content = await file.text();
+          setNewScript(content);
+        } catch {
+          const FileSystemLegacy = await import('expo-file-system/legacy');
+          const content = await FileSystemLegacy.readAsStringAsync(asset.uri);
+          setNewScript(content);
+        }
+      }
+    } catch (error) {
+      console.log('Error picking document:', error);
+      setUploadedFileName(null);
+    } finally {
+      setIsLoadingFile(false);
+    }
+  }, [newTitle]);
 
   const [selectedText, setSelectedText] = useState('');
   const [selectionStart, setSelectionStart] = useState(0);
@@ -63,6 +126,7 @@ export default function SidesAnnotationScreen() {
     const id = addSide({ title: newTitle.trim(), scriptText: newScript.trim() });
     setNewTitle('');
     setNewScript('');
+    setUploadedFileName(null);
     setActiveSideId(id);
     setMode('view');
   }, [newTitle, newScript, addSide]);
@@ -185,7 +249,31 @@ export default function SidesAnnotationScreen() {
           />
 
           <Text style={[styles.formLabel, { marginTop: 16 }]}>Script Text</Text>
-          <Text style={styles.formHint}>Paste or type your sides/script here</Text>
+          <Text style={styles.formHint}>Upload a PDF or paste your sides below</Text>
+
+          <TouchableOpacity
+            style={styles.uploadBtn}
+            onPress={handlePickDocument}
+            disabled={isLoadingFile}
+          >
+            {isLoadingFile ? (
+              <ActivityIndicator size="small" color={Colors.accent} />
+            ) : (
+              <FileUp size={24} color={Colors.accent} />
+            )}
+            <Text style={styles.uploadBtnTitle}>
+              {isLoadingFile ? 'Reading file...' : 'Upload Sides (PDF, TXT)'}
+            </Text>
+          </TouchableOpacity>
+          {uploadedFileName && (
+            <View style={styles.fileInfoRow}>
+              <FileText size={14} color={Colors.accent} />
+              <Text style={styles.fileInfoText} numberOfLines={1}>
+                {uploadedFileName}
+              </Text>
+            </View>
+          )}
+
           <TextInput
             style={[styles.input, styles.scriptInput]}
             value={newScript}
@@ -366,7 +454,14 @@ export default function SidesAnnotationScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Sides Annotation' }} />
+      <Stack.Screen options={{
+        title: 'Sides Annotation',
+        headerLeft: () => (
+          <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
+            <ChevronLeft size={24} color={Colors.accent} />
+          </TouchableOpacity>
+        ),
+      }} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <TouchableOpacity
           style={styles.addButton}
@@ -561,6 +656,39 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginBottom: 8,
     marginTop: -4,
+  },
+  uploadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    paddingVertical: 16,
+    backgroundColor: Colors.spotlight,
+    marginBottom: 12,
+  },
+  uploadBtnTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.textPrimary,
+  },
+  fileInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.card,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+  fileInfoText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    flex: 1,
   },
   input: {
     backgroundColor: Colors.card,

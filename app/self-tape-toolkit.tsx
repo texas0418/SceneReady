@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Animated,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import {
   CheckCircle,
   Circle,
@@ -18,6 +18,7 @@ import {
   Mic,
   Clapperboard,
   Eye,
+  ChevronLeft,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { selfTapeChecklist, framingGuides } from '@/mocks/selfTapeChecklist';
@@ -31,6 +32,7 @@ const categoryIcons: Record<string, React.ReactNode> = {
 };
 
 export default function SelfTapeToolkit() {
+  const router = useRouter();
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [expandedCategory, setExpandedCategory] = useState<string | null>('1');
   const [showFraming, setShowFraming] = useState(false);
@@ -53,7 +55,14 @@ export default function SelfTapeToolkit() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Self-Tape Toolkit' }} />
+      <Stack.Screen options={{
+        title: 'Self-Tape Toolkit',
+        headerLeft: () => (
+          <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
+            <ChevronLeft size={24} color={Colors.accent} />
+          </TouchableOpacity>
+        ),
+      }} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.progressSection}>
           <View style={styles.progressHeader}>

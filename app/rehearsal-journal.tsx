@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import {
   Plus,
   ChevronDown,
@@ -23,6 +23,7 @@ import {
   Frown,
   Star,
   Heart,
+  ChevronLeft,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useRehearsalJournal, JournalEntry } from '@/providers/RehearsalJournalProvider';
@@ -49,6 +50,7 @@ function formatDate(dateStr: string) {
 }
 
 export default function RehearsalJournalScreen() {
+  const router = useRouter();
   const { entries, addEntry, deleteEntry } = useRehearsalJournal();
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -128,7 +130,14 @@ export default function RehearsalJournalScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Stack.Screen options={{ title: 'Rehearsal Journal' }} />
+      <Stack.Screen options={{
+        title: 'Rehearsal Journal',
+        headerLeft: () => (
+          <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
+            <ChevronLeft size={24} color={Colors.accent} />
+          </TouchableOpacity>
+        ),
+      }} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <TouchableOpacity
           style={styles.addButton}

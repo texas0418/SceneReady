@@ -10,10 +10,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import {
   Plus,
   ChevronRight,
+  ChevronLeft,
   Trash2,
   X,
   Target,
@@ -105,6 +106,7 @@ const FIELDS: FieldConfig[] = [
 
 export default function CharacterBreakdownScreen() {
   const { breakdowns, addBreakdown, updateBreakdown, deleteBreakdown } = useCharacterBreakdowns();
+  const router = useRouter();
   const [mode, setMode] = useState<'list' | 'create' | 'edit'>('list');
   const [editId, setEditId] = useState<string | null>(null);
 
@@ -263,7 +265,14 @@ export default function CharacterBreakdownScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Character Breakdown' }} />
+      <Stack.Screen options={{
+        title: 'Character Breakdown',
+        headerLeft: () => (
+          <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
+            <ChevronLeft size={24} color={Colors.accent} />
+          </TouchableOpacity>
+        ),
+      }} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <TouchableOpacity
           style={styles.addButton}

@@ -7,8 +7,9 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native';
-import { Stack } from 'expo-router';
-import { Search, X, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { Stack, useRouter } from 'expo-router';
+import { Search, X, ChevronDown, ChevronUp   ChevronLeft,
+} from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { glossaryTerms, GlossaryTerm } from '@/mocks/glossary';
 
@@ -23,6 +24,7 @@ const categoryColors: Record<string, string> = {
 };
 
 export default function IndustryGlossary() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [expandedTerms, setExpandedTerms] = useState<Set<string>>(new Set());
@@ -67,7 +69,14 @@ export default function IndustryGlossary() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Industry Glossary' }} />
+      <Stack.Screen options={{
+        title: 'Industry Glossary',
+        headerLeft: () => (
+          <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
+            <ChevronLeft size={24} color={Colors.accent} />
+          </TouchableOpacity>
+        ),
+      }} />
 
       <View style={styles.searchRow}>
         <View style={styles.searchInput}>

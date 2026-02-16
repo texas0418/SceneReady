@@ -8,14 +8,16 @@ import {
   Animated,
   ScrollView,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Play, Pause, RotateCcw, Clock, Minus, Plus, AlertTriangle } from 'lucide-react-native';
+import { Play, Pause, RotateCcw, Clock, Minus, Plus, AlertTriangle   ChevronLeft,
+} from 'lucide-react-native';
 import Colors from '@/constants/colors';
 
 type Phase = 'setup' | 'prep' | 'perform' | 'done';
 
 export default function ColdReadTimer() {
+  const router = useRouter();
   const [phase, setPhase] = useState<Phase>('setup');
   const [prepMinutes, setPrepMinutes] = useState(3);
   const [performMinutes, setPerformMinutes] = useState(5);
@@ -104,7 +106,14 @@ export default function ColdReadTimer() {
   if (phase === 'setup') {
     return (
       <View style={styles.container}>
-        <Stack.Screen options={{ title: 'Cold Read Timer' }} />
+        <Stack.Screen options={{
+        title: 'Cold Read Timer',
+        headerLeft: () => (
+          <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
+            <ChevronLeft size={24} color={Colors.accent} />
+          </TouchableOpacity>
+        ),
+      }} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           <View style={styles.setupHeader}>
             <View style={styles.setupIcon}>
@@ -181,7 +190,14 @@ export default function ColdReadTimer() {
   if (phase === 'done') {
     return (
       <View style={styles.container}>
-        <Stack.Screen options={{ title: 'Cold Read Timer' }} />
+        <Stack.Screen options={{
+        title: 'Cold Read Timer',
+        headerLeft: () => (
+          <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
+            <ChevronLeft size={24} color={Colors.accent} />
+          </TouchableOpacity>
+        ),
+      }} />
         <View style={styles.doneContainer}>
           <Text style={styles.doneEmoji}>🎬</Text>
           <Text style={styles.doneTitle}>Scene!</Text>
@@ -202,7 +218,14 @@ export default function ColdReadTimer() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Cold Read Timer' }} />
+      <Stack.Screen options={{
+        title: 'Cold Read Timer',
+        headerLeft: () => (
+          <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
+            <ChevronLeft size={24} color={Colors.accent} />
+          </TouchableOpacity>
+        ),
+      }} />
       <View style={styles.timerContainer}>
         <View style={[styles.phaseBadge, isPrep ? styles.prepBadge : styles.performBadge]}>
           {!isPrep && <AlertTriangle size={14} color="#E57373" />}
