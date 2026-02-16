@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Play, Pause, RotateCcw, Clock, Minus, Plus, AlertTriangle   ChevronLeft,
+import { Play, Pause, RotateCcw, Clock, Minus, Plus, AlertTriangle, ChevronLeft,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 
