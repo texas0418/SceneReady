@@ -347,11 +347,17 @@ export default function Teleprompter() {
             <TouchableOpacity style={styles.controlBtn} onPress={handleReset}>
               <RotateCcw size={20} color="#fff" />
             </TouchableOpacity>
+            <TouchableOpacity style={styles.speedBtn} onPress={() => setSpeed(Math.max(1, speed - 1))}>
+              <Minus size={16} color="#fff" />
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.playBtnLarge}
               onPress={() => setIsPlaying(!isPlaying)}
             >
               {isPlaying ? <Pause size={28} color="#000" /> : <Play size={28} color="#000" />}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.speedBtn} onPress={() => setSpeed(Math.min(10, speed + 1))}>
+              <Plus size={16} color="#fff" />
             </TouchableOpacity>
             <View style={styles.speedBadge}>
               <Text style={styles.speedBadgeText}>{speed}x</Text>
@@ -594,6 +600,14 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  speedBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },

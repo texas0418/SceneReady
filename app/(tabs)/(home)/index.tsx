@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,9 +24,7 @@ import {
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 
-const { width } = Dimensions.get('window');
 const CARD_GAP = 12;
-const CARD_WIDTH = (width - 48 - CARD_GAP) / 2;
 
 interface ToolCard {
   id: string;
@@ -125,9 +123,16 @@ const tools: ToolCard[] = [
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const cardAnims = useRef(tools.map(() => new Animated.Value(0))).current;
+
+  // Responsive grid: 2 columns on phone, 3 on iPad/wide screens
+  const numColumns = width >= 600 ? 3 : 2;
+  const horizontalPadding = width >= 600 ? 32 : 20;
+  const totalGaps = (numColumns - 1) * CARD_GAP;
+  const cardWidth = (width - horizontalPadding * 2 - totalGaps) / numColumns;
 
   useEffect(() => {
     Animated.parallel([
@@ -165,7 +170,7 @@ export default function HomeScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: horizontalPadding }]}
       >
         <Animated.View
           style={[
@@ -176,13 +181,13 @@ export default function HomeScreen() {
             },
           ]}
         >
-          <Text style={styles.greeting}>Actor's Toolkit</Text>
+          <Text style={[styles.greeting, width >= 600 && styles.greetingLarge]}>Actor's Toolkit</Text>
           <Text style={styles.subtitle}>Everything you need. One app.</Text>
         </Animated.View>
 
         <Animated.View style={{ opacity: cardAnims[0], transform: [{ scale: cardAnims[0].interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) }] }}>
           <TouchableOpacity
-            style={styles.featuredCard}
+            style={[styles.featuredCard, width >= 600 && styles.featuredCardWide]}
             onPress={() => handlePress(featuredTool.route)}
             activeOpacity={0.85}
             testID="featured-card"
@@ -225,7 +230,7 @@ export default function HomeScreen() {
               }}
             >
               <TouchableOpacity
-                style={[styles.toolCard, { backgroundColor: tool.gradient[0] }]}
+                style={[styles.toolCard, { backgroundColor: tool.gradient[0], width: cardWidth }]}
                 onPress={() => handlePress(tool.route)}
                 activeOpacity={0.8}
                 testID={`tool-card-${tool.id}`}
@@ -249,9 +254,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  scrollContent: {
-    paddingHorizontal: 20,
-  },
+  scrollContent: {},
   header: {
     paddingTop: 16,
     paddingBottom: 24,
@@ -261,6 +264,9 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: Colors.textPrimary,
     letterSpacing: -0.5,
+  },
+  greetingLarge: {
+    fontSize: 38,
   },
   subtitle: {
     fontSize: 16,
@@ -275,6 +281,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(232,168,56,0.2)',
     overflow: 'hidden',
+  },
+  featuredCardWide: {
+    padding: 28,
   },
   featuredGlow: {
     position: 'absolute',
@@ -340,7 +349,6 @@ const styles = StyleSheet.create({
     gap: CARD_GAP,
   },
   toolCard: {
-    width: CARD_WIDTH,
     borderRadius: 14,
     padding: 16,
     minHeight: 130,
