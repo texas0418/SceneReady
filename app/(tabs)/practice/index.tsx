@@ -19,6 +19,7 @@ import {
   Heart,
   Eye,
   Wind,
+  CalendarCheck,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 
@@ -30,6 +31,14 @@ const practiceTools = [
     icon: <Users size={22} color={Colors.accent} />,
     route: '/ai-scene-partner',
     color: Colors.spotlightStrong,
+  },
+  {
+    id: 'audition-tracker',
+    title: 'Audition Tracker',
+    description: 'Log auditions and track callbacks',
+    icon: <CalendarCheck size={22} color="#4DD0E1" />,
+    route: '/audition-tracker',
+    color: 'rgba(77,208,225,0.12)',
   },
   {
     id: 'teleprompter',

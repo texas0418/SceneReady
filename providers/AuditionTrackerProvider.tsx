@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContextHook } from '@nkzw/create-context-hook';
+import createContextHook from '@nkzw/create-context-hook';
 
 const STORAGE_KEY = 'audition_tracker';
 
