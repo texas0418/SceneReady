@@ -10,6 +10,7 @@ import {
   Animated,
   KeyboardAvoidingView,
   Platform,
+  Share,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import {
@@ -24,6 +25,7 @@ import {
   Star,
   Heart,
   ChevronLeft,
+  Share2,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useRehearsalJournal, JournalEntry } from '@/providers/RehearsalJournalProvider';
@@ -111,6 +113,22 @@ export default function RehearsalJournalScreen() {
       { text: 'Delete', style: 'destructive', onPress: () => deleteEntry(id) },
     ]);
   }, [deleteEntry]);
+
+  const handleShare = useCallback(async (entry: JournalEntry) => {
+    const typeConfig = getTypeConfig(entry.type);
+    const moodConfig = getMoodConfig(entry.mood);
+    const parts = [
+      `📓 ${entry.title}`,
+      `${typeConfig.label} · ${formatDate(entry.date)} · Mood: ${moodConfig.label}`,
+      entry.whatWorked ? `\nWhat Worked:\n${entry.whatWorked}` : '',
+      entry.toExplore ? `\nTo Explore:\n${entry.toExplore}` : '',
+      entry.emotionalTriggers ? `\nEmotional Triggers:\n${entry.emotionalTriggers}` : '',
+      entry.notes ? `\nNotes:\n${entry.notes}` : '',
+    ].filter(Boolean);
+    try {
+      await Share.share({ message: parts.join('\n') });
+    } catch {}
+  }, [getTypeConfig, getMoodConfig]);
 
   const getTypeConfig = useCallback((t: JournalEntry['type']) => {
     return SESSION_TYPES.find((s) => s.value === t) ?? SESSION_TYPES[0];
@@ -332,13 +350,22 @@ export default function RehearsalJournalScreen() {
                       <Text style={styles.entrySectionText}>{entry.notes}</Text>
                     </View>
                   ) : null}
-                  <TouchableOpacity
-                    style={styles.deleteBtn}
-                    onPress={() => handleDelete(entry.id, entry.title)}
-                  >
-                    <Trash2 size={16} color={Colors.error} />
-                    <Text style={styles.deleteBtnText}>Delete Entry</Text>
-                  </TouchableOpacity>
+                  <View style={styles.entryActions}>
+                    <TouchableOpacity
+                      style={styles.shareBtn}
+                      onPress={() => handleShare(entry)}
+                    >
+                      <Share2 size={16} color={Colors.accent} />
+                      <Text style={styles.shareBtnText}>Share</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteBtn}
+                      onPress={() => handleDelete(entry.id, entry.title)}
+                    >
+                      <Trash2 size={16} color={Colors.error} />
+                      <Text style={styles.deleteBtnText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
             </TouchableOpacity>
@@ -542,14 +569,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    alignSelf: 'flex-end',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    marginTop: 6,
   },
   deleteBtnText: {
     fontSize: 13,
     color: Colors.error,
+    fontWeight: '500' as const,
+  },
+  entryActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginTop: 6,
+  },
+  shareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  shareBtnText: {
+    fontSize: 13,
+    color: Colors.accent,
     fontWeight: '500' as const,
   },
 });

@@ -8,6 +8,8 @@ import { UserMonologuesProvider } from "@/providers/UserMonologuesProvider";
 import { RehearsalJournalProvider } from "@/providers/RehearsalJournalProvider";
 import { CharacterBreakdownProvider } from "@/providers/CharacterBreakdownProvider";
 import { SidesAnnotationProvider } from "@/providers/SidesAnnotationProvider";
+import { AuditionTrackerProvider } from "@/providers/AuditionTrackerProvider";
+import { FavoritesProvider } from "@/providers/FavoritesProvider";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -31,7 +33,6 @@ function RootLayoutNav() {
       <Stack.Screen name="monologue-library" options={{ title: "Monologue Library" }} />
       <Stack.Screen name="monologue/[id]" options={{ title: "Monologue" }} />
       <Stack.Screen name="cold-read-timer" options={{ title: "Cold Read Timer" }} />
-
       <Stack.Screen name="daily-warmups" options={{ title: "Daily Warm-Ups" }} />
       <Stack.Screen name="warmup/[id]" options={{ title: "Warm-Up" }} />
       <Stack.Screen name="industry-glossary" options={{ title: "Industry Glossary" }} />
@@ -39,6 +40,7 @@ function RootLayoutNav() {
       <Stack.Screen name="rehearsal-journal" options={{ title: "Rehearsal Journal" }} />
       <Stack.Screen name="character-breakdown" options={{ title: "Character Breakdown" }} />
       <Stack.Screen name="sides-annotation" options={{ title: "Sides Annotation" }} />
+      <Stack.Screen name="audition-tracker" options={{ title: "Audition Tracker" }} />
     </Stack>
   );
 }
@@ -51,15 +53,19 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView>
-        <UserMonologuesProvider>
-          <RehearsalJournalProvider>
-            <CharacterBreakdownProvider>
-              <SidesAnnotationProvider>
-                <RootLayoutNav />
-              </SidesAnnotationProvider>
-            </CharacterBreakdownProvider>
-          </RehearsalJournalProvider>
-        </UserMonologuesProvider>
+        <FavoritesProvider>
+          <AuditionTrackerProvider>
+            <UserMonologuesProvider>
+              <RehearsalJournalProvider>
+                <CharacterBreakdownProvider>
+                  <SidesAnnotationProvider>
+                    <RootLayoutNav />
+                  </SidesAnnotationProvider>
+                </CharacterBreakdownProvider>
+              </RehearsalJournalProvider>
+            </UserMonologuesProvider>
+          </AuditionTrackerProvider>
+        </FavoritesProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>
   );

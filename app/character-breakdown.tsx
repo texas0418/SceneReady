@@ -9,6 +9,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Share,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import {
@@ -26,6 +27,7 @@ import {
   Brain,
   Activity,
   Mic,
+  Share2,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useCharacterBreakdowns, CharacterBreakdown } from '@/providers/CharacterBreakdownProvider';
@@ -189,6 +191,17 @@ export default function CharacterBreakdownScreen() {
     ]);
   }, [deleteBreakdown, editId, resetForm]);
 
+  const handleShare = useCallback(async (b: CharacterBreakdown) => {
+    const parts = [
+      `🎭 Character Breakdown: ${b.characterName}`,
+      b.projectName ? `Project: ${b.projectName}` : '',
+      ...FIELDS.filter((f) => (b[f.key] ?? '').trim()).map((f) => `\n${f.label}:\n${b[f.key]}`),
+    ].filter(Boolean);
+    try {
+      await Share.share({ message: parts.join('\n') });
+    } catch {}
+  }, []);
+
   const updateField = useCallback((key: string, value: string) => {
     setFields((prev) => ({ ...prev, [key]: value }));
   }, []);
@@ -327,6 +340,12 @@ export default function CharacterBreakdownScreen() {
                 </View>
               </View>
               <View style={styles.breakdownActions}>
+                <TouchableOpacity
+                  onPress={() => handleShare(b)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Share2 size={16} color={Colors.textMuted} />
+                </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => handleDelete(b.id, b.characterName)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}

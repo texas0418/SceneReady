@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Animated,
   useWindowDimensions,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,8 +22,12 @@ import {
   NotebookPen,
   UserSearch,
   Highlighter,
+  CalendarCheck,
+  X,
+  ChevronRight,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
+import { useFavorites } from '@/providers/FavoritesProvider';
 
 const CARD_GAP = 12;
 
@@ -45,6 +50,14 @@ const tools: ToolCard[] = [
     route: '/ai-scene-partner',
     gradient: [Colors.spotlightStrong, Colors.card],
     featured: true,
+  },
+  {
+    id: 'audition-tracker',
+    title: 'Audition Tracker',
+    subtitle: 'Log & track auditions',
+    icon: <CalendarCheck size={22} color="#4DD0E1" />,
+    route: '/audition-tracker',
+    gradient: ['rgba(77,208,225,0.12)', Colors.card],
   },
   {
     id: 'self-tape',
@@ -120,19 +133,53 @@ const tools: ToolCard[] = [
   },
 ];
 
+const ONBOARDING_STEPS = [
+  {
+    title: 'Welcome to SceneReady',
+    subtitle: 'Your complete actor\'s toolkit — everything you need to prep, rehearse, and nail the audition.',
+    emoji: '🎬',
+  },
+  {
+    title: 'Prep Your Scripts',
+    subtitle: 'Import sides as PDF or text, annotate with beats and objectives, and build deep character breakdowns.',
+    emoji: '📝',
+  },
+  {
+    title: 'Practice & Rehearse',
+    subtitle: 'Run lines with an AI scene partner, use the teleprompter for self-tapes, and sharpen cold reads under pressure.',
+    emoji: '🎭',
+  },
+  {
+    title: 'Track Everything',
+    subtitle: 'Log auditions, journal your rehearsals, and warm up your instrument with guided routines.',
+    emoji: '📊',
+  },
+];
+
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const { hasSeenOnboarding, dismissOnboarding } = useFavorites();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const cardAnims = useRef(tools.map(() => new Animated.Value(0))).current;
 
-  // Responsive grid: 2 columns on phone, 3 on iPad/wide screens
+  const [onboardingVisible, setOnboardingVisible] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+  const onboardingFade = useRef(new Animated.Value(1)).current;
+
+  // Responsive grid
   const numColumns = width >= 600 ? 3 : 2;
   const horizontalPadding = width >= 600 ? 32 : 20;
   const totalGaps = (numColumns - 1) * CARD_GAP;
   const cardWidth = (width - horizontalPadding * 2 - totalGaps) / numColumns;
+
+  useEffect(() => {
+    if (!hasSeenOnboarding) {
+      setOnboardingVisible(true);
+    }
+  }, [hasSeenOnboarding]);
 
   useEffect(() => {
     Animated.parallel([
@@ -159,6 +206,31 @@ export default function HomeScreen() {
     Animated.stagger(60, cardAnimations).start();
   }, []);
 
+  const handleOnboardingNext = useCallback(() => {
+    if (onboardingStep < ONBOARDING_STEPS.length - 1) {
+      Animated.timing(onboardingFade, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }).start(() => {
+        setOnboardingStep((prev) => prev + 1);
+        Animated.timing(onboardingFade, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+      });
+    } else {
+      dismissOnboarding();
+      setOnboardingVisible(false);
+    }
+  }, [onboardingStep, dismissOnboarding, onboardingFade]);
+
+  const handleOnboardingSkip = useCallback(() => {
+    dismissOnboarding();
+    setOnboardingVisible(false);
+  }, [dismissOnboarding]);
+
   const handlePress = (route: string) => {
     router.push(route as any);
   };
@@ -168,6 +240,57 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Onboarding Modal */}
+      <Modal
+        visible={onboardingVisible}
+        animationType="fade"
+        transparent
+        statusBarTranslucent
+      >
+        <View style={styles.onboardingOverlay}>
+          <View style={styles.onboardingCard}>
+            <TouchableOpacity style={styles.onboardingSkip} onPress={handleOnboardingSkip}>
+              <Text style={styles.onboardingSkipText}>Skip</Text>
+            </TouchableOpacity>
+
+            <Animated.View style={[styles.onboardingContent, { opacity: onboardingFade }]}>
+              <Text style={styles.onboardingEmoji}>
+                {ONBOARDING_STEPS[onboardingStep].emoji}
+              </Text>
+              <Text style={styles.onboardingTitle}>
+                {ONBOARDING_STEPS[onboardingStep].title}
+              </Text>
+              <Text style={styles.onboardingSubtitle}>
+                {ONBOARDING_STEPS[onboardingStep].subtitle}
+              </Text>
+            </Animated.View>
+
+            <View style={styles.onboardingDots}>
+              {ONBOARDING_STEPS.map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.onboardingDot,
+                    i === onboardingStep && styles.onboardingDotActive,
+                  ]}
+                />
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={styles.onboardingBtn}
+              onPress={handleOnboardingNext}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.onboardingBtnText}>
+                {onboardingStep < ONBOARDING_STEPS.length - 1 ? 'Next' : 'Get Started'}
+              </Text>
+              <ChevronRight size={18} color="#0F0F0F" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scrollContent, { paddingHorizontal: horizontalPadding }]}
@@ -375,5 +498,87 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 30,
+  },
+  // Onboarding
+  onboardingOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+  },
+  onboardingCard: {
+    backgroundColor: Colors.card,
+    borderRadius: 20,
+    padding: 32,
+    width: '100%',
+    maxWidth: 380,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  onboardingSkip: {
+    position: 'absolute',
+    top: 16,
+    right: 20,
+    padding: 4,
+  },
+  onboardingSkipText: {
+    fontSize: 14,
+    color: Colors.textMuted,
+    fontWeight: '500' as const,
+  },
+  onboardingContent: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  onboardingEmoji: {
+    fontSize: 52,
+    marginBottom: 20,
+  },
+  onboardingTitle: {
+    fontSize: 22,
+    fontWeight: '700' as const,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  onboardingSubtitle: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  onboardingDots: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 24,
+  },
+  onboardingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.border,
+  },
+  onboardingDotActive: {
+    backgroundColor: Colors.accent,
+    width: 24,
+  },
+  onboardingBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.accent,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    width: '100%',
+  },
+  onboardingBtnText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: '#0F0F0F',
   },
 });
