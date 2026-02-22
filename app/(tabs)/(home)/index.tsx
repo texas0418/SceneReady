@@ -23,9 +23,11 @@ import {
   UserSearch,
   Highlighter,
   CalendarCheck,
-  X,
   ChevronRight,
+  Star,
+  Pin,
 } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useFavorites } from '@/providers/FavoritesProvider';
 
@@ -36,8 +38,10 @@ interface ToolCard {
   title: string;
   subtitle: string;
   icon: React.ReactNode;
+  smallIcon: (color: string) => React.ReactNode;
   route: string;
   gradient: string[];
+  accentColor: string;
   featured?: boolean;
 }
 
@@ -47,8 +51,10 @@ const tools: ToolCard[] = [
     title: 'AI Scene Partner',
     subtitle: 'Practice with AI',
     icon: <Users size={24} color={Colors.accent} />,
+    smallIcon: (c: string) => <Users size={18} color={c} />,
     route: '/ai-scene-partner',
     gradient: [Colors.spotlightStrong, Colors.card],
+    accentColor: Colors.accent,
     featured: true,
   },
   {
@@ -56,80 +62,100 @@ const tools: ToolCard[] = [
     title: 'Audition Tracker',
     subtitle: 'Log & track auditions',
     icon: <CalendarCheck size={22} color="#4DD0E1" />,
+    smallIcon: (c: string) => <CalendarCheck size={18} color={c} />,
     route: '/audition-tracker',
     gradient: ['rgba(77,208,225,0.12)', Colors.card],
+    accentColor: '#4DD0E1',
   },
   {
     id: 'self-tape',
     title: 'Self-Tape Toolkit',
     subtitle: 'Checklist & guides',
     icon: <Camera size={22} color="#E57373" />,
+    smallIcon: (c: string) => <Camera size={18} color={c} />,
     route: '/self-tape-toolkit',
     gradient: ['rgba(229,115,115,0.12)', Colors.card],
+    accentColor: '#E57373',
   },
   {
     id: 'teleprompter',
     title: 'Teleprompter',
     subtitle: 'Scroll your lines',
     icon: <Monitor size={22} color="#64B5F6" />,
+    smallIcon: (c: string) => <Monitor size={18} color={c} />,
     route: '/teleprompter',
     gradient: ['rgba(100,181,246,0.12)', Colors.card],
+    accentColor: '#64B5F6',
   },
   {
     id: 'monologues',
     title: 'Monologues',
     subtitle: 'Curated collection',
     icon: <BookOpen size={22} color="#81C784" />,
+    smallIcon: (c: string) => <BookOpen size={18} color={c} />,
     route: '/monologue-library',
     gradient: ['rgba(129,199,132,0.12)', Colors.card],
+    accentColor: '#81C784',
   },
   {
     id: 'cold-read',
     title: 'Cold Read Timer',
     subtitle: 'Pressure practice',
     icon: <Timer size={22} color="#FFB74D" />,
+    smallIcon: (c: string) => <Timer size={18} color={c} />,
     route: '/cold-read-timer',
     gradient: ['rgba(255,183,77,0.12)', Colors.card],
+    accentColor: '#FFB74D',
   },
   {
     id: 'journal',
     title: 'Rehearsal Journal',
     subtitle: 'Track your growth',
     icon: <NotebookPen size={22} color="#CE93D8" />,
+    smallIcon: (c: string) => <NotebookPen size={18} color={c} />,
     route: '/rehearsal-journal',
     gradient: ['rgba(206,147,216,0.12)', Colors.card],
+    accentColor: '#CE93D8',
   },
   {
     id: 'character',
     title: 'Character Builder',
     subtitle: 'Deep script analysis',
     icon: <UserSearch size={22} color="#F48FB1" />,
+    smallIcon: (c: string) => <UserSearch size={18} color={c} />,
     route: '/character-breakdown',
     gradient: ['rgba(244,143,177,0.12)', Colors.card],
+    accentColor: '#F48FB1',
   },
   {
     id: 'sides',
     title: 'Sides Annotation',
     subtitle: 'Mark up your scripts',
     icon: <Highlighter size={22} color="#90CAF9" />,
+    smallIcon: (c: string) => <Highlighter size={18} color={c} />,
     route: '/sides-annotation',
     gradient: ['rgba(144,202,249,0.12)', Colors.card],
+    accentColor: '#90CAF9',
   },
   {
     id: 'warmups',
     title: 'Daily Warm-Ups',
     subtitle: 'Voice & body prep',
     icon: <Flame size={22} color="#FF8A65" />,
+    smallIcon: (c: string) => <Flame size={18} color={c} />,
     route: '/daily-warmups',
     gradient: ['rgba(255,138,101,0.12)', Colors.card],
+    accentColor: '#FF8A65',
   },
   {
     id: 'glossary',
     title: 'Glossary',
     subtitle: 'Industry terms',
     icon: <FileText size={22} color="#4DD0E1" />,
+    smallIcon: (c: string) => <FileText size={18} color={c} />,
     route: '/industry-glossary',
     gradient: ['rgba(77,208,225,0.12)', Colors.card],
+    accentColor: '#4DD0E1',
   },
 ];
 
@@ -151,7 +177,7 @@ const ONBOARDING_STEPS = [
   },
   {
     title: 'Track Everything',
-    subtitle: 'Log auditions, journal your rehearsals, and warm up your instrument with guided routines.',
+    subtitle: 'Log auditions, journal your rehearsals, and warm up with guided routines. Tap the ⭐ on any tool to pin it for quick access.',
     emoji: '📊',
   },
 ];
@@ -160,7 +186,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { hasSeenOnboarding, dismissOnboarding } = useFavorites();
+  const { hasSeenOnboarding, dismissOnboarding, favorites, toggleFavorite, isFavorite } = useFavorites();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const cardAnims = useRef(tools.map(() => new Animated.Value(0))).current;
@@ -235,8 +261,16 @@ export default function HomeScreen() {
     router.push(route as any);
   };
 
+  const handleToggleFavorite = useCallback((toolId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    toggleFavorite(toolId);
+  }, [toggleFavorite]);
+
   const featuredTool = tools[0];
   const gridTools = tools.slice(1);
+
+  // Get pinned tools
+  const pinnedTools = tools.filter((t) => favorites.includes(t.id));
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -308,6 +342,34 @@ export default function HomeScreen() {
           <Text style={styles.subtitle}>Everything you need. One app.</Text>
         </Animated.View>
 
+        {/* Quick Access - Pinned Tools */}
+        {pinnedTools.length > 0 && (
+          <View style={styles.quickAccessSection}>
+            <View style={styles.quickAccessHeader}>
+              <Pin size={14} color={Colors.accent} />
+              <Text style={styles.quickAccessTitle}>Quick Access</Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.quickAccessScroll}>
+              <View style={styles.quickAccessRow}>
+                {pinnedTools.map((tool) => (
+                  <TouchableOpacity
+                    key={tool.id}
+                    style={styles.quickAccessChip}
+                    onPress={() => handlePress(tool.route)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.quickAccessIcon, { backgroundColor: tool.accentColor + '20' }]}>
+                      {tool.smallIcon(tool.accentColor)}
+                    </View>
+                    <Text style={styles.quickAccessLabel} numberOfLines={1}>{tool.title}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Featured Card */}
         <Animated.View style={{ opacity: cardAnims[0], transform: [{ scale: cardAnims[0].interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }) }] }}>
           <TouchableOpacity
             style={[styles.featuredCard, width >= 600 && styles.featuredCardWide]}
@@ -328,9 +390,17 @@ export default function HomeScreen() {
                 </Text>
               </View>
             </View>
-            <View style={styles.featuredArrow}>
-              <Text style={styles.featuredArrowText}>→</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.featuredStar}
+              onPress={() => handleToggleFavorite(featuredTool.id)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Star
+                size={18}
+                color={isFavorite(featuredTool.id) ? Colors.accent : Colors.textMuted}
+                fill={isFavorite(featuredTool.id) ? Colors.accent : 'transparent'}
+              />
+            </TouchableOpacity>
           </TouchableOpacity>
         </Animated.View>
 
@@ -358,7 +428,20 @@ export default function HomeScreen() {
                 activeOpacity={0.8}
                 testID={`tool-card-${tool.id}`}
               >
-                <View style={styles.toolIconWrap}>{tool.icon}</View>
+                <View style={styles.toolCardTop}>
+                  <View style={styles.toolIconWrap}>{tool.icon}</View>
+                  <TouchableOpacity
+                    onPress={() => handleToggleFavorite(tool.id)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={styles.starBtn}
+                  >
+                    <Star
+                      size={15}
+                      color={isFavorite(tool.id) ? Colors.accent : Colors.textMuted}
+                      fill={isFavorite(tool.id) ? Colors.accent : 'transparent'}
+                    />
+                  </TouchableOpacity>
+                </View>
                 <Text style={styles.toolTitle}>{tool.title}</Text>
                 <Text style={styles.toolSubtitle}>{tool.subtitle}</Text>
               </TouchableOpacity>
@@ -396,6 +479,53 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 4,
   },
+  // Quick Access
+  quickAccessSection: {
+    marginBottom: 20,
+  },
+  quickAccessHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  quickAccessTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.accent,
+  },
+  quickAccessScroll: {
+    marginHorizontal: -4,
+  },
+  quickAccessRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 4,
+  },
+  quickAccessChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  quickAccessIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickAccessLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.textPrimary,
+  },
+  // Featured
   featuredCard: {
     backgroundColor: Colors.card,
     borderRadius: 16,
@@ -451,15 +581,12 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 19,
   },
-  featuredArrow: {
+  featuredStar: {
     position: 'absolute',
     bottom: 16,
     right: 16,
   },
-  featuredArrowText: {
-    fontSize: 20,
-    color: Colors.accent,
-  },
+  // Grid
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600' as const,
@@ -477,6 +604,11 @@ const styles = StyleSheet.create({
     minHeight: 130,
     justifyContent: 'space-between',
   },
+  toolCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
   toolIconWrap: {
     width: 40,
     height: 40,
@@ -485,6 +617,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
+  },
+  starBtn: {
+    padding: 4,
   },
   toolTitle: {
     fontSize: 15,
