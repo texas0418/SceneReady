@@ -19,7 +19,6 @@ export const [UserMonologuesProvider, useUserMonologues] = createContextHook(() 
     queryKey: ['user_monologues'],
     queryFn: async () => {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      console.log('Loaded user monologues from storage:', stored ? JSON.parse(stored).length : 0);
       return stored ? (JSON.parse(stored) as UserMonologue[]) : [];
     },
   });
@@ -50,7 +49,6 @@ export const [UserMonologuesProvider, useUserMonologues] = createContextHook(() 
     const updated = [newMonologue, ...monologues];
     setMonologues(updated);
     saveMutation.mutate(updated);
-    console.log('Added user monologue:', newMonologue.title);
     return newMonologue.id;
   }, [monologues, saveMutation]);
 
@@ -58,7 +56,6 @@ export const [UserMonologuesProvider, useUserMonologues] = createContextHook(() 
     const updated = monologues.filter((m) => m.id !== id);
     setMonologues(updated);
     saveMutation.mutate(updated);
-    console.log('Deleted user monologue:', id);
   }, [monologues, saveMutation]);
 
   const getMonologue = useCallback((id: string) => {

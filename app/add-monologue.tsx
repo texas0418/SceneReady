@@ -63,10 +63,8 @@ export default function AddMonologue() {
         copyToCacheDirectory: true,
       });
 
-      console.log('Document picker result:', JSON.stringify(result));
 
       if (result.canceled || !result.assets || result.assets.length === 0) {
-        console.log('Document picking cancelled');
         return;
       }
 
@@ -107,9 +105,7 @@ export default function AddMonologue() {
         setTitle(nameWithoutExt);
       }
 
-      console.log('Extracted text length:', extracted.length);
     } catch (error) {
-      console.log('PDF pick error:', error);
       Alert.alert('Error', 'Failed to load PDF. Please try again or paste the text manually.');
     } finally {
       setIsExtracting(false);

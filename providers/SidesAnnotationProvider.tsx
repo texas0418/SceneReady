@@ -31,7 +31,6 @@ export const [SidesAnnotationProvider, useSidesAnnotation] = createContextHook((
     queryKey: ['sides_annotations'],
     queryFn: async () => {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      console.log('Loaded annotated sides:', stored ? JSON.parse(stored).length : 0);
       return stored ? (JSON.parse(stored) as AnnotatedSide[]) : [];
     },
   });
@@ -64,7 +63,6 @@ export const [SidesAnnotationProvider, useSidesAnnotation] = createContextHook((
     const updated = [newSide, ...sides];
     setSides(updated);
     saveMutation.mutate(updated);
-    console.log('Added annotated side:', newSide.title);
     return newSide.id;
   }, [sides, saveMutation]);
 
@@ -80,7 +78,6 @@ export const [SidesAnnotationProvider, useSidesAnnotation] = createContextHook((
     );
     setSides(updated);
     saveMutation.mutate(updated);
-    console.log('Added annotation to side:', sideId);
   }, [sides, saveMutation]);
 
   const removeAnnotation = useCallback((sideId: string, annotationId: string) => {
@@ -97,7 +94,6 @@ export const [SidesAnnotationProvider, useSidesAnnotation] = createContextHook((
     const updated = sides.filter((s) => s.id !== id);
     setSides(updated);
     saveMutation.mutate(updated);
-    console.log('Deleted annotated side:', id);
   }, [sides, saveMutation]);
 
   const getSide = useCallback((id: string) => {

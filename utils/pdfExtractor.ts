@@ -79,7 +79,6 @@ function extractTextFromPDFBytes(data: Uint8Array): string {
         decoded = new TextDecoder('latin1').decode(streamData);
       }
     } catch (e) {
-      console.log('Failed to decode stream:', e);
       continue;
     }
 
@@ -92,7 +91,6 @@ function extractTextFromPDFBytes(data: Uint8Array): string {
   const result = textParts.join('\n').trim();
 
   if (!result) {
-    console.log('No text found via stream parsing, attempting raw text extraction');
     return extractRawText(data);
   }
 
@@ -204,13 +202,11 @@ function cleanExtractedText(text: string): string {
 }
 
 export async function extractTextFromPDF(uri: string, webFile?: File | null): Promise<string> {
-  console.log('Extracting text from PDF...');
 
   try {
     if (Platform.OS === 'web' && webFile) {
       const arrayBuffer = await webFile.arrayBuffer();
       const data = new Uint8Array(arrayBuffer);
-      console.log('PDF loaded on web, size:', data.length);
       return extractTextFromPDFBytes(data);
     }
 
@@ -220,19 +216,15 @@ export async function extractTextFromPDF(uri: string, webFile?: File | null): Pr
         const base64 = await FileSystemLegacy.readAsStringAsync(uri, {
           encoding: FileSystemLegacy.EncodingType.Base64,
         });
-        console.log('PDF loaded on native via legacy, base64 length:', base64.length);
         const data = decodeBase64ToUint8Array(base64);
         return extractTextFromPDFBytes(data);
       } catch (legacyError) {
-        console.log('Legacy file system failed for PDF:', legacyError);
         try {
           const { File: ExpoFile } = await import('expo-file-system');
           const file = new ExpoFile(uri);
           const arrayBuffer = await file.bytes();
-          console.log('PDF loaded on native via new API, size:', arrayBuffer.length);
           return extractTextFromPDFBytes(arrayBuffer);
         } catch (newApiError) {
-          console.log('New file API also failed for PDF:', newApiError);
           throw newApiError;
         }
       }
@@ -240,7 +232,6 @@ export async function extractTextFromPDF(uri: string, webFile?: File | null): Pr
 
     throw new Error('Unable to read PDF file');
   } catch (error) {
-    console.log('PDF extraction error:', error);
     throw new Error('Could not extract text from this PDF. Try a text-based PDF (not scanned/image-based).');
   }
 }

@@ -44,13 +44,11 @@ async function readFileContent(uri: string): Promise<string> {
     const content = await file.text();
     return content;
   } catch (error) {
-    console.log('Error reading file with new API, trying legacy:', error);
     try {
       const FileSystemLegacy = await import('expo-file-system/legacy');
       const content = await FileSystemLegacy.readAsStringAsync(uri);
       return content;
     } catch (legacyError) {
-      console.log('Error reading file with legacy API:', legacyError);
       throw legacyError;
     }
   }
@@ -103,28 +101,23 @@ export default function Teleprompter() {
   const handlePickDocument = useCallback(async () => {
     try {
       setIsLoadingFile(true);
-      console.log('Opening document picker...');
       const result = await DocumentPicker.getDocumentAsync({
         type: ['text/plain', 'text/html', 'text/rtf', 'text/markdown', 'application/rtf', 'application/pdf'],
         copyToCacheDirectory: true,
       });
 
       if (result.canceled) {
-        console.log('Document picking cancelled');
         setIsLoadingFile(false);
         return;
       }
 
       const asset = result.assets[0];
-      console.log('Picked document:', asset.name, asset.mimeType, asset.size);
       setUploadedFileName(asset.name);
 
       const isPDF = isPDFFile(asset.name, asset.mimeType ?? undefined);
-      console.log('Is PDF:', isPDF);
 
       if (isPDF) {
         const text = await extractTextFromPDF(asset.uri, Platform.OS === 'web' ? asset.file : null);
-        console.log('Extracted PDF text, length:', text.length);
         if (!text.trim()) {
           setUploadedFileName(null);
           setScriptText('');
@@ -139,15 +132,12 @@ export default function Teleprompter() {
         }
       } else if (Platform.OS === 'web' && asset.file) {
         const text = await asset.file.text();
-        console.log('Read file content on web, length:', text.length);
         setScriptText(text);
       } else {
         const text = await readFileContent(asset.uri);
-        console.log('Read file content on native, length:', text.length);
         setScriptText(text);
       }
     } catch (error) {
-      console.log('Error picking document:', error);
       setUploadedFileName(null);
     } finally {
       setIsLoadingFile(false);

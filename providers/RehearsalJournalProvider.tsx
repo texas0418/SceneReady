@@ -26,7 +26,6 @@ export const [RehearsalJournalProvider, useRehearsalJournal] = createContextHook
     queryKey: ['rehearsal_journal'],
     queryFn: async () => {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      console.log('Loaded journal entries:', stored ? JSON.parse(stored).length : 0);
       return stored ? (JSON.parse(stored) as JournalEntry[]) : [];
     },
   });
@@ -56,7 +55,6 @@ export const [RehearsalJournalProvider, useRehearsalJournal] = createContextHook
     const updated = [newEntry, ...entries];
     setEntries(updated);
     saveMutation.mutate(updated);
-    console.log('Added journal entry:', newEntry.title);
     return newEntry.id;
   }, [entries, saveMutation]);
 
@@ -64,14 +62,12 @@ export const [RehearsalJournalProvider, useRehearsalJournal] = createContextHook
     const updated = entries.map((e) => (e.id === id ? { ...e, ...updates } : e));
     setEntries(updated);
     saveMutation.mutate(updated);
-    console.log('Updated journal entry:', id);
   }, [entries, saveMutation]);
 
   const deleteEntry = useCallback((id: string) => {
     const updated = entries.filter((e) => e.id !== id);
     setEntries(updated);
     saveMutation.mutate(updated);
-    console.log('Deleted journal entry:', id);
   }, [entries, saveMutation]);
 
   return useMemo(() => ({

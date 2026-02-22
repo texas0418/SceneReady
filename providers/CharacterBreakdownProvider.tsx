@@ -30,7 +30,6 @@ export const [CharacterBreakdownProvider, useCharacterBreakdowns] = createContex
     queryKey: ['character_breakdowns'],
     queryFn: async () => {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      console.log('Loaded character breakdowns:', stored ? JSON.parse(stored).length : 0);
       return stored ? (JSON.parse(stored) as CharacterBreakdown[]) : [];
     },
   });
@@ -62,7 +61,6 @@ export const [CharacterBreakdownProvider, useCharacterBreakdowns] = createContex
     const updated = [newBreakdown, ...breakdowns];
     setBreakdowns(updated);
     saveMutation.mutate(updated);
-    console.log('Added character breakdown:', newBreakdown.characterName);
     return newBreakdown.id;
   }, [breakdowns, saveMutation]);
 
@@ -72,14 +70,12 @@ export const [CharacterBreakdownProvider, useCharacterBreakdowns] = createContex
     );
     setBreakdowns(updated);
     saveMutation.mutate(updated);
-    console.log('Updated character breakdown:', id);
   }, [breakdowns, saveMutation]);
 
   const deleteBreakdown = useCallback((id: string) => {
     const updated = breakdowns.filter((b) => b.id !== id);
     setBreakdowns(updated);
     saveMutation.mutate(updated);
-    console.log('Deleted character breakdown:', id);
   }, [breakdowns, saveMutation]);
 
   const getBreakdown = useCallback((id: string) => {

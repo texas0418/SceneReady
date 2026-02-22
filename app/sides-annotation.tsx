@@ -99,7 +99,6 @@ export default function SidesAnnotationScreen() {
         }
       }
     } catch (error) {
-      console.log('Error picking document:', error);
       setUploadedFileName(null);
     } finally {
       setIsLoadingFile(false);
@@ -179,7 +178,6 @@ export default function SidesAnnotationScreen() {
     setShowAnnotationModal(false);
     setAnnotationNote('');
     setSelectedText('');
-    console.log('Annotation saved:', annotationType, selectionStart, selectionEnd);
   }, [activeSideId, selectionStart, selectionEnd, annotationType, annotationNote, selectedText, addAnnotation]);
 
   const renderAnnotatedScript = useCallback((side: AnnotatedSide) => {
