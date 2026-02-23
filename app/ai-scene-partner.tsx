@@ -35,6 +35,7 @@ export default function AIScenePartner() {
   const [parsedLines, setParsedLines] = useState<SceneLine[]>([]);
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasPlayedCurrent, setHasPlayedCurrent] = useState(false);
   const [speechRate, setSpeechRate] = useState(0.9);
   const [showSettings, setShowSettings] = useState(false);
   const [isSetup, setIsSetup] = useState(true);
@@ -46,31 +47,142 @@ export default function AIScenePartner() {
     }
 
     const lines: SceneLine[] = [];
-    const scriptLines = scriptText.split('\n').filter((l) => l.trim());
+    const rawLines = scriptText.split('\n');
     const yourName = yourCharacter.trim().toUpperCase();
     const partnerName = partnerCharacter.trim().toUpperCase();
 
     let currentChar = '';
     let currentLine = '';
 
-    for (const line of scriptLines) {
-      const trimmed = line.trim();
+    // Build flexible matchers: match the name the user typed OR the name as it appears in script
+    // Collect all unique uppercase "name-like" lines from the script (short lines, likely character names)
+    const allNames = new Set<string>();
+    for (const raw of rawLines) {
+      const t = raw.trim();
+      // A line that looks like a character name: short, no punctuation except maybe a colon
+      if (t.length > 0 && t.length <= 30) {
+        const nameCandidate = t.replace(/:$/, '').trim().toUpperCase();
+        if (nameCandidate === yourName || nameCandidate === partnerName) {
+          allNames.add(nameCandidate);
+        }
+        // Also check if the script uses a similar but different spelling
+        // e.g., user typed "Louis" but script has "LOUIE"
+      }
+    }
+
+    // Helper: does this line represent a character cue?
+    const matchesYou = (upper: string): boolean => {
+      // Exact: "BENNY:" or "BENNY :" or standalone "BENNY"
+      if (upper === yourName) return true;
+      if (upper.startsWith(yourName + ':') || upper.startsWith(yourName + ' :')) return true;
+      return false;
+    };
+
+    const matchesPartner = (upper: string): boolean => {
+      if (upper === partnerName) return true;
+      if (upper.startsWith(partnerName + ':') || upper.startsWith(partnerName + ' :')) return true;
+      return false;
+    };
+
+    // Also detect character names by scanning script for all-caps short lines
+    // that appear multiple times (likely character cues)
+    const nameCounts = new Map<string, number>();
+    for (const raw of rawLines) {
+      const t = raw.trim();
+      if (t.length > 0 && t.length <= 25 && /^[A-Z][A-Z\s.''-]*$/.test(t)) {
+        const key = t.replace(/:$/, '').trim();
+        nameCounts.set(key, (nameCounts.get(key) || 0) + 1);
+      }
+    }
+
+    // Find the script name that best matches each user-entered name
+    const findScriptName = (userName: string): string[] => {
+      const results = [userName];
+      for (const [scriptName] of nameCounts) {
+        const sUpper = scriptName.toUpperCase();
+        if (sUpper === userName) continue;
+        // Fuzzy: first 3+ chars match, or one contains the other
+        if (userName.length >= 3 && sUpper.length >= 3) {
+          if (sUpper.startsWith(userName.substring(0, 3)) || userName.startsWith(sUpper.substring(0, 3))) {
+            results.push(sUpper);
+          }
+        }
+        if (sUpper.includes(userName) || userName.includes(sUpper)) {
+          results.push(sUpper);
+        }
+      }
+      return [...new Set(results)];
+    };
+
+    const yourNames = findScriptName(yourName);
+    const partnerNames = findScriptName(partnerName);
+
+    const matchesAnyYou = (upper: string): boolean => {
+      for (const name of yourNames) {
+        if (upper === name) return true;
+        if (upper.startsWith(name + ':') || upper.startsWith(name + ' :')) return true;
+      }
+      return false;
+    };
+
+    const matchesAnyPartner = (upper: string): boolean => {
+      for (const name of partnerNames) {
+        if (upper === name) return true;
+        if (upper.startsWith(name + ':') || upper.startsWith(name + ' :')) return true;
+      }
+      return false;
+    };
+
+    const getDialogueAfterName = (trimmed: string): string => {
+      const colonIdx = trimmed.indexOf(':');
+      if (colonIdx !== -1) {
+        return trimmed.substring(colonIdx + 1).trim();
+      }
+      return '';
+    };
+
+    for (const raw of rawLines) {
+      const trimmed = raw.trim();
+      if (!trimmed) continue;
       const upper = trimmed.toUpperCase();
 
-      if (upper.startsWith(yourName + ':') || upper.startsWith(yourName + ' :')) {
+      // Skip pure stage directions in parentheses
+      if (/^\(.*\)$/.test(trimmed)) continue;
+
+      if (matchesAnyYou(upper)) {
         if (currentChar && currentLine) {
           lines.push({ character: currentChar, line: currentLine.trim() });
         }
         currentChar = yourCharacter.trim();
-        currentLine = trimmed.substring(trimmed.indexOf(':') + 1).trim();
-      } else if (upper.startsWith(partnerName + ':') || upper.startsWith(partnerName + ' :')) {
+        currentLine = getDialogueAfterName(trimmed);
+      } else if (matchesAnyPartner(upper)) {
         if (currentChar && currentLine) {
           lines.push({ character: currentChar, line: currentLine.trim() });
         }
         currentChar = partnerCharacter.trim();
-        currentLine = trimmed.substring(trimmed.indexOf(':') + 1).trim();
+        currentLine = getDialogueAfterName(trimmed);
       } else if (currentChar) {
-        currentLine += ' ' + trimmed;
+        // Skip lines that look like stage directions:
+        // - Entire line in parentheses: "(They sit down.)"
+        // - Line mentions multiple character names as action: "Benny and Louie drink Hennessy."
+        const isLikelyStageDirection = (() => {
+          // Contains two or more known character names — probably an action line
+          const upperTrimmed = trimmed.toUpperCase();
+          let nameHits = 0;
+          for (const name of [...yourNames, ...partnerNames]) {
+            if (upperTrimmed.includes(name)) nameHits++;
+          }
+          if (nameHits >= 2) return true;
+          return false;
+        })();
+
+        if (isLikelyStageDirection) continue;
+
+        // Strip ALL inline stage directions like "(then)", "(beat)", "(a moment)"
+        const cleaned = trimmed.replace(/\(.*?\)/g, '').trim();
+        if (cleaned) {
+          currentLine += (currentLine ? ' ' : '') + cleaned;
+        }
       }
     }
 
@@ -81,7 +193,7 @@ export default function AIScenePartner() {
     if (lines.length === 0) {
       Alert.alert(
         'Could Not Parse',
-        'Make sure your script uses the format:\nCHARACTER: Line of dialogue'
+        'Make sure character names appear before their lines. Supported formats:\n\nCHARACTER: Line of dialogue\n\nor\n\nCHARACTER\nLine of dialogue'
       );
       return;
     }
@@ -95,12 +207,14 @@ export default function AIScenePartner() {
     (index: number) => {
       if (index >= parsedLines.length) {
         setIsPlaying(false);
+        setHasPlayedCurrent(false);
         setCurrentLineIndex(0);
         return;
       }
 
       const line = parsedLines[index];
       setCurrentLineIndex(index);
+      setHasPlayedCurrent(true);
 
       if (line.character.toUpperCase() === yourCharacter.trim().toUpperCase()) {
         setIsPlaying(false);
@@ -129,9 +243,17 @@ export default function AIScenePartner() {
 
   const handlePlay = () => {
     if (isPlaying) {
+      // Currently speaking — pause
       Speech.stop();
       setIsPlaying(false);
+    } else if (hasPlayedCurrent && currentLineIndex < parsedLines.length - 1) {
+      // Current line already played/read — advance to next
+      const next = currentLineIndex + 1;
+      setHasPlayedCurrent(false);
+      setCurrentLineIndex(next);
+      speakLine(next);
     } else {
+      // First play or replay last line
       speakLine(currentLineIndex);
     }
   };
@@ -147,6 +269,7 @@ export default function AIScenePartner() {
   const handleReset = () => {
     Speech.stop();
     setIsPlaying(false);
+    setHasPlayedCurrent(false);
     setIsSetup(true);
     setParsedLines([]);
     setCurrentLineIndex(0);
@@ -213,8 +336,8 @@ export default function AIScenePartner() {
           <View style={styles.tipCard}>
             <FileText size={16} color={Colors.textSecondary} />
             <Text style={styles.tipText}>
-              Format your script with character names followed by a colon.{'\n'}
-              Example: CHARACTER: Their dialogue here.
+              Format your script with character names before their dialogue.{'\n'}
+              Works with "NAME: dialogue" or name on its own line.
             </Text>
           </View>
         </ScrollView>

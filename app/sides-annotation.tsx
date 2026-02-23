@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Platform,
   Modal,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import {
@@ -111,6 +112,12 @@ export default function SidesAnnotationScreen() {
   const [showAnnotationModal, setShowAnnotationModal] = useState(false);
   const [annotationNote, setAnnotationNote] = useState('');
   const [annotationType, setAnnotationType] = useState<Annotation['type']>('beat');
+  const [focusedAnnotationId, setFocusedAnnotationId] = useState<string | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const annotationRefs = useRef<Record<string, View | null>>({});
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scriptCardRef = useRef<View>(null);
+  const focusPulse = useRef(new Animated.Value(0)).current;
 
   const activeSide = useMemo(() => {
     if (!activeSideId) return null;
@@ -162,8 +169,60 @@ export default function SidesAnnotationScreen() {
       Alert.alert('Select Text', 'Please select some text in the script first, then tap "Add Annotation".');
       return;
     }
+    setAnnotationNote('');
+    setAnnotationType('beat');
     setShowAnnotationModal(true);
   }, [selectedText]);
+
+  const focusAnnotation = useCallback((annId: string) => {
+    setFocusedAnnotationId(annId);
+    // Pulse animation
+    focusPulse.setValue(0);
+    Animated.sequence([
+      Animated.timing(focusPulse, { toValue: 1, duration: 300, useNativeDriver: false }),
+      Animated.timing(focusPulse, { toValue: 0, duration: 300, useNativeDriver: false }),
+      Animated.timing(focusPulse, { toValue: 1, duration: 300, useNativeDriver: false }),
+      Animated.timing(focusPulse, { toValue: 0, duration: 2000, useNativeDriver: false }),
+    ]).start(() => {
+      setFocusedAnnotationId(null);
+    });
+
+    // Scroll to the annotation item
+    const ref = annotationRefs.current[annId];
+    if (ref && scrollViewRef.current) {
+      ref.measureLayout(
+        scrollViewRef.current.getInnerViewRef(),
+        (_x: number, y: number) => {
+          scrollViewRef.current?.scrollTo({ y: y - 100, animated: true });
+        },
+        () => {}
+      );
+    }
+  }, [focusPulse]);
+
+  const focusHighlight = useCallback((annId: string) => {
+    setFocusedAnnotationId(annId);
+    focusPulse.setValue(0);
+    Animated.sequence([
+      Animated.timing(focusPulse, { toValue: 1, duration: 300, useNativeDriver: false }),
+      Animated.timing(focusPulse, { toValue: 0, duration: 300, useNativeDriver: false }),
+      Animated.timing(focusPulse, { toValue: 1, duration: 300, useNativeDriver: false }),
+      Animated.timing(focusPulse, { toValue: 0, duration: 2000, useNativeDriver: false }),
+    ]).start(() => {
+      setFocusedAnnotationId(null);
+    });
+
+    // Scroll to the script card area
+    if (scriptCardRef.current && scrollViewRef.current) {
+      scriptCardRef.current.measureLayout(
+        scrollViewRef.current.getInnerViewRef(),
+        (_x: number, y: number) => {
+          scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 60), animated: true });
+        },
+        () => {}
+      );
+    }
+  }, [focusPulse]);
 
   const handleSaveAnnotation = useCallback(() => {
     if (!activeSideId) return;
@@ -178,6 +237,7 @@ export default function SidesAnnotationScreen() {
     setShowAnnotationModal(false);
     setAnnotationNote('');
     setSelectedText('');
+    setSelectMode(false);
   }, [activeSideId, selectionStart, selectionEnd, annotationType, annotationNote, selectedText, addAnnotation]);
 
   const renderAnnotatedScript = useCallback((side: AnnotatedSide) => {
@@ -306,36 +366,77 @@ export default function SidesAnnotationScreen() {
             ),
           }}
         />
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          <View style={styles.annotationToolbar}>
-            <Text style={styles.toolbarLabel}>Select text below, then:</Text>
-            <TouchableOpacity
-              style={styles.annotateBtn}
-              onPress={handleAnnotate}
-              activeOpacity={0.8}
-            >
-              <Plus size={16} color={Colors.accent} />
-              <Text style={styles.annotateBtnText}>Add Annotation</Text>
-            </TouchableOpacity>
-          </View>
-
-          {selectedText ? (
-            <View style={styles.selectionPreview}>
-              <Text style={styles.selectionLabel}>Selected:</Text>
-              <Text style={styles.selectionText} numberOfLines={2}>"{selectedText}"</Text>
-            </View>
-          ) : null}
-
-          <View style={styles.scriptCard}>
-            <TextInput
-              style={styles.scriptTextInput}
-              value={activeSide.scriptText}
-              multiline
-              editable={true}
-              scrollEnabled={false}
-              onSelectionChange={handleTextSelection}
-              textAlignVertical="top"
-            />
+        <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <View style={[styles.scriptCard, { position: 'relative' as const }]} ref={scriptCardRef}>
+            {/* Always show highlighted text */}
+            <Text style={styles.scriptTextDisplay}>
+              {(() => {
+                const text = activeSide.scriptText;
+                const anns = [...activeSide.annotations].sort((a, b) => a.startIndex - b.startIndex);
+                if (anns.length === 0) {
+                  return <Text style={styles.scriptTextSpan}>{text}</Text>;
+                }
+                const segments: React.ReactNode[] = [];
+                let lastEnd = 0;
+                anns.forEach((ann, i) => {
+                  const start = Math.max(ann.startIndex, lastEnd);
+                  if (start > lastEnd) {
+                    segments.push(
+                      <Text key={`plain-${i}`} style={styles.scriptTextSpan}>
+                        {text.substring(lastEnd, start)}
+                      </Text>
+                    );
+                  }
+                  if (ann.endIndex > start) {
+                    const isFocused = focusedAnnotationId === ann.id;
+                    segments.push(
+                      <Animated.Text
+                        key={`ann-${ann.id}`}
+                        style={[
+                          styles.scriptTextSpan,
+                          styles.highlightedSpan,
+                          {
+                            backgroundColor: isFocused
+                              ? focusPulse.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: [ann.color + '30', ann.color + '70'],
+                                })
+                              : ann.color + '30',
+                            borderBottomWidth: 2,
+                            borderBottomColor: ann.color,
+                          },
+                        ]}
+                        onPress={selectMode ? undefined : () => focusAnnotation(ann.id)}
+                      >
+                        {text.substring(start, ann.endIndex)}
+                      </Animated.Text>
+                    );
+                    lastEnd = ann.endIndex;
+                  }
+                });
+                if (lastEnd < text.length) {
+                  segments.push(
+                    <Text key="plain-end" style={styles.scriptTextSpan}>
+                      {text.substring(lastEnd)}
+                    </Text>
+                  );
+                }
+                return segments;
+              })()}
+            </Text>
+            {/* Transparent TextInput overlay for selection — only in select mode */}
+            {selectMode && (
+              <TextInput
+                style={styles.scriptTextSelectOverlay}
+                value={activeSide.scriptText}
+                multiline
+                editable={true}
+                scrollEnabled={false}
+                onSelectionChange={handleTextSelection}
+                textAlignVertical="top"
+                autoFocus
+              />
+            )}
           </View>
 
           {activeSide.annotations.length > 0 && (
@@ -345,28 +446,47 @@ export default function SidesAnnotationScreen() {
               </Text>
               {activeSide.annotations.map((ann) => {
                 const typeConfig = ANNOTATION_TYPES.find((t) => t.value === ann.type);
+                const isFocused = focusedAnnotationId === ann.id;
                 return (
-                  <View key={ann.id} style={[styles.annotationItem, { borderLeftColor: ann.color }]}>
-                    <View style={styles.annotationItemHeader}>
-                      {typeConfig?.icon}
-                      <Text style={[styles.annotationTypeLabel, { color: ann.color }]}>
-                        {typeConfig?.label}
+                  <TouchableOpacity
+                    key={ann.id}
+                    ref={(ref) => { annotationRefs.current[ann.id] = ref; }}
+                    activeOpacity={0.7}
+                    onPress={() => focusHighlight(ann.id)}
+                  >
+                    <Animated.View
+                      style={[
+                        styles.annotationItem,
+                        { borderLeftColor: ann.color },
+                        isFocused && {
+                          backgroundColor: focusPulse.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [Colors.card, ann.color + '20'],
+                          }),
+                        },
+                      ]}
+                    >
+                      <View style={styles.annotationItemHeader}>
+                        {typeConfig?.icon}
+                        <Text style={[styles.annotationTypeLabel, { color: ann.color }]}>
+                          {typeConfig?.label}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.removeAnnotationBtn}
+                          onPress={() => removeAnnotation(activeSide.id, ann.id)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <X size={14} color={Colors.textMuted} />
+                        </TouchableOpacity>
+                      </View>
+                      <Text style={styles.annotationExcerpt} numberOfLines={1}>
+                        "{activeSide.scriptText.substring(ann.startIndex, ann.endIndex)}"
                       </Text>
-                      <TouchableOpacity
-                        style={styles.removeAnnotationBtn}
-                        onPress={() => removeAnnotation(activeSide.id, ann.id)}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <X size={14} color={Colors.textMuted} />
-                      </TouchableOpacity>
-                    </View>
-                    <Text style={styles.annotationExcerpt} numberOfLines={1}>
-                      "{activeSide.scriptText.substring(ann.startIndex, ann.endIndex)}"
-                    </Text>
-                    {ann.text !== activeSide.scriptText.substring(ann.startIndex, ann.endIndex) && (
-                      <Text style={styles.annotationNoteText}>{ann.text}</Text>
-                    )}
-                  </View>
+                      {ann.text !== activeSide.scriptText.substring(ann.startIndex, ann.endIndex) && (
+                        <Text style={styles.annotationNoteText}>{ann.text}</Text>
+                      )}
+                    </Animated.View>
+                  </TouchableOpacity>
                 );
               })}
             </View>
@@ -384,8 +504,39 @@ export default function SidesAnnotationScreen() {
             </View>
           </View>
 
-          <View style={{ height: 40 }} />
+          <View style={{ height: 80 }} />
         </ScrollView>
+
+        {/* Floating toolbar pinned to bottom */}
+        <View style={styles.floatingToolbar}>
+          <TouchableOpacity
+            style={[styles.modeToggle, selectMode && styles.modeToggleActive]}
+            onPress={() => {
+              setSelectMode(!selectMode);
+              if (!selectMode) {
+                setSelectedText('');
+              }
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.modeToggleText, selectMode && styles.modeToggleTextActive]}>
+              {selectMode ? '✎ Selecting...' : '✎ Select Text'}
+            </Text>
+          </TouchableOpacity>
+          {selectedText ? (
+            <Text style={styles.floatingSelection} numberOfLines={1}>
+              "{selectedText}"
+            </Text>
+          ) : null}
+          <TouchableOpacity
+            style={[styles.annotateBtn, !selectedText && styles.annotateBtnDisabled]}
+            onPress={handleAnnotate}
+            activeOpacity={0.8}
+          >
+            <Plus size={16} color={selectedText ? Colors.accent : Colors.textMuted} />
+            <Text style={[styles.annotateBtnText, !selectedText && { color: Colors.textMuted }]}>Annotate</Text>
+          </TouchableOpacity>
+        </View>
 
         <Modal
           visible={showAnnotationModal}
@@ -724,6 +875,53 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
   },
+  modeToggle: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.backgroundLight,
+  },
+  modeToggleActive: {
+    borderColor: Colors.accent,
+    backgroundColor: Colors.spotlightStrong,
+  },
+  modeToggleText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: Colors.textMuted,
+  },
+  modeToggleTextActive: {
+    color: Colors.accent,
+  },
+  floatingToolbar: {
+    position: 'absolute' as const,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: 28,
+    backgroundColor: Colors.card,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  floatingSelection: {
+    flex: 1,
+    fontSize: 12,
+    color: Colors.accent,
+    fontStyle: 'italic' as const,
+    marginHorizontal: 4,
+  },
+  annotateBtnDisabled: {
+    borderColor: Colors.border,
+    opacity: 0.6,
+  },
   annotateBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -766,11 +964,36 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     marginBottom: 20,
+    position: 'relative' as const,
   },
   scriptText: {
     fontSize: 15,
     color: Colors.textPrimary,
     lineHeight: 24,
+  },
+  scriptTextDisplay: {
+    fontSize: 15,
+    color: Colors.textPrimary,
+    lineHeight: 24,
+  },
+  scriptTextSpan: {
+    fontSize: 15,
+    color: Colors.textPrimary,
+    lineHeight: 24,
+  },
+  highlightedSpan: {
+    borderRadius: 2,
+  },
+  scriptTextSelectOverlay: {
+    position: 'absolute' as const,
+    top: 16,
+    left: 16,
+    right: 16,
+    bottom: 0,
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.01)',
+    lineHeight: 24,
+    padding: 0,
   },
   scriptTextInput: {
     fontSize: 15,

@@ -126,6 +126,7 @@ export default function WarmupDetail() {
   const handlePlayPause = useCallback(() => {
     if (isTimerRunning) {
       setIsTimerRunning(false);
+      Speech.stop();
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } else {
       setIsTimerRunning(true);

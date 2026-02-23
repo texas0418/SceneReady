@@ -26,6 +26,7 @@ import {
   Heart,
   ChevronLeft,
   Share2,
+  Pencil,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useRehearsalJournal, JournalEntry } from '@/providers/RehearsalJournalProvider';
@@ -53,9 +54,10 @@ function formatDate(dateStr: string) {
 
 export default function RehearsalJournalScreen() {
   const router = useRouter();
-  const { entries, addEntry, deleteEntry } = useRehearsalJournal();
+  const { entries, addEntry, updateEntry, deleteEntry } = useRehearsalJournal();
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const formAnim = useRef(new Animated.Value(0)).current;
 
   const [title, setTitle] = useState('');
@@ -68,13 +70,16 @@ export default function RehearsalJournalScreen() {
 
   const toggleForm = useCallback(() => {
     const toValue = showForm ? 0 : 1;
+    if (showForm) {
+      resetForm();
+    }
     setShowForm(!showForm);
     Animated.timing(formAnim, {
       toValue,
       duration: 300,
       useNativeDriver: false,
     }).start();
-  }, [showForm, formAnim]);
+  }, [showForm, formAnim, resetForm]);
 
   const resetForm = useCallback(() => {
     setTitle('');
@@ -84,6 +89,7 @@ export default function RehearsalJournalScreen() {
     setEmotionalTriggers('');
     setNotes('');
     setMood(3);
+    setEditingId(null);
   }, []);
 
   const handleSave = useCallback(() => {
@@ -92,20 +98,29 @@ export default function RehearsalJournalScreen() {
       return;
     }
 
-    addEntry({
+    const data = {
       title: title.trim(),
       type,
-      date: new Date().toISOString(),
       whatWorked: whatWorked.trim(),
       toExplore: toExplore.trim(),
       emotionalTriggers: emotionalTriggers.trim(),
       notes: notes.trim(),
       mood,
-    });
+    };
+
+    if (editingId) {
+      updateEntry(editingId, data);
+      setEditingId(null);
+    } else {
+      addEntry({
+        ...data,
+        date: new Date().toISOString(),
+      });
+    }
 
     resetForm();
     toggleForm();
-  }, [title, type, whatWorked, toExplore, emotionalTriggers, notes, mood, addEntry, resetForm, toggleForm]);
+  }, [title, type, whatWorked, toExplore, emotionalTriggers, notes, mood, editingId, addEntry, updateEntry, resetForm, toggleForm]);
 
   const handleDelete = useCallback((id: string, entryTitle: string) => {
     Alert.alert('Delete Entry', `Remove "${entryTitle}" from your journal?`, [
@@ -113,6 +128,26 @@ export default function RehearsalJournalScreen() {
       { text: 'Delete', style: 'destructive', onPress: () => deleteEntry(id) },
     ]);
   }, [deleteEntry]);
+
+  const handleEdit = useCallback((entry: JournalEntry) => {
+    setEditingId(entry.id);
+    setTitle(entry.title);
+    setType(entry.type);
+    setMood(entry.mood);
+    setWhatWorked(entry.whatWorked || '');
+    setToExplore(entry.toExplore || '');
+    setEmotionalTriggers(entry.emotionalTriggers || '');
+    setNotes(entry.notes || '');
+    setExpandedId(null);
+    if (!showForm) {
+      setShowForm(true);
+      Animated.timing(formAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [showForm, formAnim]);
 
   const handleShare = useCallback(async (entry: JournalEntry) => {
     const typeConfig = getTypeConfig(entry.type);
@@ -140,7 +175,7 @@ export default function RehearsalJournalScreen() {
 
   const formHeight = formAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 680],
+    outputRange: [0, 950],
   });
 
   return (
@@ -169,8 +204,12 @@ export default function RehearsalJournalScreen() {
           </Text>
         </TouchableOpacity>
 
-        <Animated.View style={[styles.formWrap, { maxHeight: formHeight, overflow: 'hidden' }]}>
+        {showForm && (
+          <View style={styles.formWrap}>
           <View style={styles.form}>
+            {editingId && (
+              <Text style={styles.editingBanner}>Editing Entry</Text>
+            )}
             <Text style={styles.formLabel}>Session Title</Text>
             <TextInput
               style={styles.input}
@@ -276,10 +315,11 @@ export default function RehearsalJournalScreen() {
               activeOpacity={0.8}
               testID="save-journal-entry"
             >
-              <Text style={styles.saveBtnText}>Save Entry</Text>
+              <Text style={styles.saveBtnText}>{editingId ? 'Update Entry' : 'Save Entry'}</Text>
             </TouchableOpacity>
           </View>
-        </Animated.View>
+        </View>
+        )}
 
         {entries.length === 0 && !showForm && (
           <View style={styles.emptyState}>
@@ -352,6 +392,13 @@ export default function RehearsalJournalScreen() {
                   ) : null}
                   <View style={styles.entryActions}>
                     <TouchableOpacity
+                      style={styles.editBtn}
+                      onPress={() => handleEdit(entry)}
+                    >
+                      <Pencil size={16} color={Colors.accent} />
+                      <Text style={styles.editBtnText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
                       style={styles.shareBtn}
                       onPress={() => handleShare(entry)}
                     >
@@ -386,6 +433,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
+    paddingBottom: 40,
   },
   addButton: {
     flexDirection: 'row',
@@ -582,6 +630,27 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 8,
     marginTop: 6,
+  },
+  editBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: 'rgba(232,168,56,0.1)',
+  },
+  editBtnText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: Colors.accent,
+  },
+  editingBanner: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.accent,
+    textAlign: 'center',
+    marginBottom: 12,
   },
   shareBtn: {
     flexDirection: 'row',
