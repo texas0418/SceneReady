@@ -235,7 +235,12 @@ export default function ColdReadTimer() {
         </View>
 
         <Text style={styles.phaseInstruction}>
-          {isPrep ? 'Study your sides' : 'Deliver your read'}
+          {isPrep ? 'Study your sides — memorize as much as you can' : 'Deliver your read — perform from memory'}
+        </Text>
+        <Text style={styles.phaseHint}>
+          {isPrep
+            ? `When this timer ends, you\'ll have ${performMinutes} min to perform.`
+            : 'Your sides are below for reference if you need them.'}
         </Text>
 
         <Animated.View style={[styles.timerCircle, { transform: [{ scale: pulseAnim }] }]}>
@@ -248,9 +253,9 @@ export default function ColdReadTimer() {
           <View style={[styles.progressBarInner, { width: `${progress * 100}%` as any }]} />
         </View>
 
-        {sidesText && isPrep && (
-          <ScrollView style={styles.sidesPreview} showsVerticalScrollIndicator={false}>
-            <Text style={styles.sidesPreviewText}>{sidesText}</Text>
+        {sidesText && (
+          <ScrollView style={[styles.sidesPreview, !isPrep && styles.sidesPerformPreview]} showsVerticalScrollIndicator={false}>
+            <Text style={[styles.sidesPreviewText, !isPrep && styles.sidesPerformText]}>{sidesText}</Text>
           </ScrollView>
         )}
 
@@ -411,7 +416,14 @@ const styles = StyleSheet.create({
   phaseInstruction: {
     fontSize: 16,
     color: Colors.textSecondary,
-    marginBottom: 32,
+    marginBottom: 8,
+  },
+  phaseHint: {
+    fontSize: 13,
+    color: Colors.textMuted,
+    marginBottom: 24,
+    textAlign: 'center' as const,
+    paddingHorizontal: 20,
   },
   timerCircle: {
     width: 200,
@@ -454,10 +466,22 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 20,
   },
+  sidesPerformPreview: {
+    maxHeight: 280,
+    padding: 18,
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: 'rgba(229,115,115,0.2)',
+  },
   sidesPreviewText: {
     fontSize: 14,
     color: Colors.textSecondary,
     lineHeight: 20,
+  },
+  sidesPerformText: {
+    fontSize: 18,
+    color: Colors.textPrimary,
+    lineHeight: 28,
   },
   timerControls: {
     flexDirection: 'row',

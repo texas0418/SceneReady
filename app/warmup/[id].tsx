@@ -58,12 +58,18 @@ export default function WarmupDetail() {
 
   // Timer countdown
   useEffect(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
     if (isTimerRunning && timeRemaining > 0) {
       timerRef.current = setInterval(() => {
         setTimeRemaining((prev) => {
           if (prev <= 1) {
             // Timer finished for this step
             clearInterval(timerRef.current!);
+            timerRef.current = null;
             handleStepComplete();
             return 0;
           }
@@ -83,7 +89,7 @@ export default function WarmupDetail() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isTimerRunning, timeRemaining]);
+  }, [isTimerRunning, timeRemaining, currentStep]);
 
   // Pulse animation for timer
   useEffect(() => {
@@ -112,7 +118,13 @@ export default function WarmupDetail() {
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       setTimeRemaining(parseDurationToSeconds(warmup.steps[nextStep].duration));
-      // Keep timer running for auto-advance
+      // Read next step instruction after a brief pause
+      if (audioEnabled) {
+        Speech.stop();
+        setTimeout(() => {
+          Speech.speak(warmup.steps[nextStep].instruction, { rate: 0.85, pitch: 1.0 });
+        }, 600);
+      }
     } else {
       setIsTimerRunning(false);
       if (audioEnabled && warmup) {

@@ -247,11 +247,6 @@ export default function Teleprompter() {
 
   return (
     <View style={styles.prompterContainer}>
-      <TouchableOpacity
-        style={StyleSheet.absoluteFill}
-        activeOpacity={1}
-        onPress={() => setShowControls(!showControls)}
-      >
         <ScrollView
           ref={scrollRef}
           style={styles.prompterScroll}
@@ -263,6 +258,9 @@ export default function Teleprompter() {
           scrollEventThrottle={16}
           onScroll={(e) => {
             scrollPosition.current = e.nativeEvent.contentOffset.y;
+          }}
+          onTouchEnd={() => {
+            if (!isPlaying) setShowControls(!showControls);
           }}
         >
           <Text
@@ -277,7 +275,6 @@ export default function Teleprompter() {
         </ScrollView>
 
         <View style={[styles.guideLine, { top: SCREEN_HEIGHT * 0.35 }]} />
-      </TouchableOpacity>
 
       {showControls && (
         <>
