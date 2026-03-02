@@ -102,7 +102,7 @@ export default function Teleprompter() {
     try {
       setIsLoadingFile(true);
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['text/plain', 'text/html', 'text/rtf', 'text/markdown', 'application/rtf', 'application/pdf'],
+        type: ['application/pdf', 'text/plain', 'text/*', 'application/rtf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
         copyToCacheDirectory: true,
       });
 

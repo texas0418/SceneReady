@@ -56,7 +56,7 @@ export default function SidesAnnotationScreen() {
     try {
       setIsLoadingFile(true);
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'text/plain', 'text/html', 'text/rtf', 'text/markdown', 'application/rtf'],
+        type: ['application/pdf', 'text/plain', 'text/*', 'application/rtf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
         copyToCacheDirectory: true,
       });
 
