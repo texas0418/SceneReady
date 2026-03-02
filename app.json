@@ -2,7 +2,7 @@
   "expo": {
     "name": "SceneReady",
     "slug": "sceneready",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "sceneready",
@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sceneready.app",
-      "buildNumber": "7",
+      "buildNumber": "9",
       "infoPlist": {
         "NSSpeechRecognitionUsageDescription": "SceneReady uses speech synthesis to read scene partner lines aloud.",
         "CFBundleAllowMixedLocalizations": true,
