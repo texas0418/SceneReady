@@ -52,6 +52,7 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// eslint-disable-next-line max-lines-per-function -- tracked in #5
 export default function RehearsalJournalScreen() {
   const router = useRouter();
   const { entries, addEntry, updateEntry, deleteEntry } = useRehearsalJournal();
@@ -68,6 +69,17 @@ export default function RehearsalJournalScreen() {
   const [notes, setNotes] = useState('');
   const [mood, setMood] = useState(3);
 
+  const resetForm = useCallback(() => {
+    setTitle('');
+    setType('rehearsal');
+    setWhatWorked('');
+    setToExplore('');
+    setEmotionalTriggers('');
+    setNotes('');
+    setMood(3);
+    setEditingId(null);
+  }, []);
+
   const toggleForm = useCallback(() => {
     const toValue = showForm ? 0 : 1;
     if (showForm) {
@@ -80,17 +92,6 @@ export default function RehearsalJournalScreen() {
       useNativeDriver: false,
     }).start();
   }, [showForm, formAnim, resetForm]);
-
-  const resetForm = useCallback(() => {
-    setTitle('');
-    setType('rehearsal');
-    setWhatWorked('');
-    setToExplore('');
-    setEmotionalTriggers('');
-    setNotes('');
-    setMood(3);
-    setEditingId(null);
-  }, []);
 
   const handleSave = useCallback(() => {
     if (!title.trim()) {
@@ -149,6 +150,14 @@ export default function RehearsalJournalScreen() {
     }
   }, [showForm, formAnim]);
 
+  const getTypeConfig = useCallback((t: JournalEntry['type']) => {
+    return SESSION_TYPES.find((s) => s.value === t) ?? SESSION_TYPES[0];
+  }, []);
+
+  const getMoodConfig = useCallback((m: number) => {
+    return MOOD_ICONS.find((mi) => mi.value === m) ?? MOOD_ICONS[2];
+  }, []);
+
   const handleShare = useCallback(async (entry: JournalEntry) => {
     const typeConfig = getTypeConfig(entry.type);
     const moodConfig = getMoodConfig(entry.mood);
@@ -164,14 +173,6 @@ export default function RehearsalJournalScreen() {
       await Share.share({ message: parts.join('\n') });
     } catch {}
   }, [getTypeConfig, getMoodConfig]);
-
-  const getTypeConfig = useCallback((t: JournalEntry['type']) => {
-    return SESSION_TYPES.find((s) => s.value === t) ?? SESSION_TYPES[0];
-  }, []);
-
-  const getMoodConfig = useCallback((m: number) => {
-    return MOOD_ICONS.find((mi) => mi.value === m) ?? MOOD_ICONS[2];
-  }, []);
 
   const formHeight = formAnim.interpolate({
     inputRange: [0, 1],

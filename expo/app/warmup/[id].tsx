@@ -283,7 +283,7 @@ export default function WarmupDetail() {
           <View style={styles.doneCard}>
             <Text style={styles.doneEmoji}>✨</Text>
             <Text style={styles.doneTitle}>Warm-Up Complete!</Text>
-            <Text style={styles.doneSubtitle}>You're ready to perform.</Text>
+            <Text style={styles.doneSubtitle}>You&apos;re ready to perform.</Text>
             <TouchableOpacity style={styles.resetLink} onPress={handleReset}>
               <RotateCcw size={14} color={Colors.accent} />
               <Text style={styles.resetLinkText}>Start Over</Text>
