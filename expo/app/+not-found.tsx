@@ -9,7 +9,7 @@ export default function NotFoundScreen() {
       <View style={styles.container}>
         <Text style={styles.emoji}>🎬</Text>
         <Text style={styles.title}>Scene not found</Text>
-        <Text style={styles.subtitle}>Looks like this page didn't make the final cut.</Text>
+        <Text style={styles.subtitle}>Looks like this page didn&apos;t make the final cut.</Text>
         <Link href="/" style={styles.link}>
           <Text style={styles.linkText}>Back to Home</Text>
         </Link>

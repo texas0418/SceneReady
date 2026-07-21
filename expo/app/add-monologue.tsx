@@ -37,6 +37,7 @@ const GENDERS: { label: string; value: MonologueGender }[] = [
 
 const AGE_RANGES = ['16-25', '20-30', '20-35', '25-40', '30-45', '30-50', '40+'];
 
+// eslint-disable-next-line max-lines-per-function, complexity -- tracked in #1
 export default function AddMonologue() {
   const router = useRouter();
   const { addMonologue } = useUserMonologues();

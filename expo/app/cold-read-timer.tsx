@@ -16,6 +16,7 @@ import Colors from '@/constants/colors';
 
 type Phase = 'setup' | 'prep' | 'perform' | 'done';
 
+// eslint-disable-next-line complexity -- tracked in #4
 export default function ColdReadTimer() {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('setup');

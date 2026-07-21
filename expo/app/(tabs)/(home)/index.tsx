@@ -338,7 +338,7 @@ export default function HomeScreen() {
             },
           ]}
         >
-          <Text style={[styles.greeting, width >= 600 && styles.greetingLarge]}>Actor's Toolkit</Text>
+          <Text style={[styles.greeting, width >= 600 && styles.greetingLarge]}>Actor&apos;s Toolkit</Text>
           <Text style={styles.subtitle}>Everything you need. One app.</Text>
         </Animated.View>
 

@@ -54,6 +54,7 @@ async function readFileContent(uri: string): Promise<string> {
   }
 }
 
+// eslint-disable-next-line complexity -- tracked in #7
 export default function Teleprompter() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
