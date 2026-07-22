@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- tracked in #6 */
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
@@ -41,6 +42,7 @@ const ANNOTATION_TYPES: { value: Annotation['type']; label: string; color: strin
   { value: 'emphasis', label: 'Emphasis', color: '#BA68C8', icon: <Bold size={16} color="#BA68C8" /> },
 ];
 
+// eslint-disable-next-line max-lines-per-function, complexity -- tracked in #6
 export default function SidesAnnotationScreen() {
   const { sides, addSide, addAnnotation, removeAnnotation, deleteSide } = useSidesAnnotation();
   const router = useRouter();
@@ -191,7 +193,8 @@ export default function SidesAnnotationScreen() {
     const ref = annotationRefs.current[annId];
     if (ref && scrollViewRef.current) {
       ref.measureLayout(
-        scrollViewRef.current.getInnerViewRef(),
+        // getInnerViewRef exists at runtime but is missing from RN's ScrollView types.
+        (scrollViewRef.current as unknown as { getInnerViewRef: () => number }).getInnerViewRef(),
         (_x: number, y: number) => {
           scrollViewRef.current?.scrollTo({ y: y - 100, animated: true });
         },
@@ -215,7 +218,8 @@ export default function SidesAnnotationScreen() {
     // Scroll to the script card area
     if (scriptCardRef.current && scrollViewRef.current) {
       scriptCardRef.current.measureLayout(
-        scrollViewRef.current.getInnerViewRef(),
+        // getInnerViewRef exists at runtime but is missing from RN's ScrollView types.
+        (scrollViewRef.current as unknown as { getInnerViewRef: () => number }).getInnerViewRef(),
         (_x: number, y: number) => {
           scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 60), animated: true });
         },
@@ -480,7 +484,7 @@ export default function SidesAnnotationScreen() {
                         </TouchableOpacity>
                       </View>
                       <Text style={styles.annotationExcerpt} numberOfLines={1}>
-                        "{activeSide.scriptText.substring(ann.startIndex, ann.endIndex)}"
+                        &quot;{activeSide.scriptText.substring(ann.startIndex, ann.endIndex)}&quot;
                       </Text>
                       {ann.text !== activeSide.scriptText.substring(ann.startIndex, ann.endIndex) && (
                         <Text style={styles.annotationNoteText}>{ann.text}</Text>
@@ -525,7 +529,7 @@ export default function SidesAnnotationScreen() {
           </TouchableOpacity>
           {selectedText ? (
             <Text style={styles.floatingSelection} numberOfLines={1}>
-              "{selectedText}"
+              &quot;{selectedText}&quot;
             </Text>
           ) : null}
           <TouchableOpacity
@@ -554,7 +558,7 @@ export default function SidesAnnotationScreen() {
               </View>
 
               <Text style={styles.modalSelectedText} numberOfLines={2}>
-                "{selectedText}"
+                &quot;{selectedText}&quot;
               </Text>
 
               <Text style={styles.modalLabel}>Type</Text>

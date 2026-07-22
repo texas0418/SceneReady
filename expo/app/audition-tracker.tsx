@@ -61,6 +61,7 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// eslint-disable-next-line max-lines-per-function -- tracked in #3
 export default function AuditionTrackerScreen() {
   const router = useRouter();
   const { auditions, addAudition, updateAudition, deleteAudition } = useAuditionTracker();

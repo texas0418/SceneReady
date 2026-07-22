@@ -10,6 +10,7 @@ function decodeBase64ToUint8Array(base64: string): Uint8Array {
   return bytes;
 }
 
+// eslint-disable-next-line complexity -- tracked in #8
 function extractTextFromPDFBytes(data: Uint8Array): string {
   const textParts: string[] = [];
 
@@ -97,6 +98,7 @@ function extractTextFromPDFBytes(data: Uint8Array): string {
   return cleanExtractedText(result);
 }
 
+// eslint-disable-next-line complexity -- tracked in #8
 function extractTextOperations(content: string): string {
   const lines: string[] = [];
   let currentLine = '';

@@ -27,6 +27,7 @@ interface SceneLine {
   line: string;
 }
 
+// eslint-disable-next-line max-lines-per-function -- tracked in #2
 export default function AIScenePartner() {
   const router = useRouter();
   const [scriptText, setScriptText] = useState('');
@@ -40,6 +41,7 @@ export default function AIScenePartner() {
   const [showSettings, setShowSettings] = useState(false);
   const [isSetup, setIsSetup] = useState(true);
 
+    // eslint-disable-next-line complexity -- tracked in #2
   const parseScript = useCallback(() => {
     if (!scriptText.trim() || !yourCharacter.trim() || !partnerCharacter.trim()) {
       Alert.alert('Missing Info', 'Please paste your sides and enter both character names.');
@@ -293,7 +295,7 @@ export default function AIScenePartner() {
             </View>
             <Text style={styles.setupTitle}>Set Up Your Scene</Text>
             <Text style={styles.setupSubtitle}>
-              Paste your sides below and assign character names. The AI will read your scene partner's lines.
+              Paste your sides below and assign character names. The AI will read your scene partner&apos;s lines.
             </Text>
           </View>
 
@@ -307,7 +309,7 @@ export default function AIScenePartner() {
             testID="your-character-input"
           />
 
-          <Text style={styles.inputLabel}>Scene Partner's Character Name</Text>
+          <Text style={styles.inputLabel}>Scene Partner&apos;s Character Name</Text>
           <TextInput
             style={styles.input}
             placeholder="e.g., David"
@@ -337,7 +339,7 @@ export default function AIScenePartner() {
             <FileText size={16} color={Colors.textSecondary} />
             <Text style={styles.tipText}>
               Format your script with character names before their dialogue.{'\n'}
-              Works with "NAME: dialogue" or name on its own line.
+              Works with &quot;NAME: dialogue&quot; or name on its own line.
             </Text>
           </View>
         </ScrollView>
