@@ -1,0 +1,45 @@
+SCENEREADY — GOOGLE PLAY STORE LISTING (draft 2026-08-15)
+===========================================================
+
+APP NAME (30 chars max)
+SceneReady: Audition Prep
+
+SHORT DESCRIPTION (80 chars max)
+The actor's toolkit — sides, breakdowns, cold reads, and a scene partner.
+
+FULL DESCRIPTION (4000 chars max)
+-----------------------------------------------------
+Built by a working actor, for working actors and students. SceneReady puts your whole audition-prep workflow in one place — so the hours between "you got the sides" and "you're in the room" actually build a performance.
+
+PREP
+• Sides annotation — import scripts (PDF or text) and mark beat changes, objectives, tactics, and notes right on the page
+• Character breakdown worksheets — objectives, obstacles, tactics, backstory, physicality, voice: the questions coaches actually ask, structured so you answer them
+
+REHEARSE
+• AI scene partner — run lines against a text-to-speech partner that reads the other character's dialogue, as many takes as you need, no favors owed
+• Teleprompter — scroll your sides at your pace
+• Cold read timer — timed sight-reading reps for the audition skill nobody practices
+
+BETWEEN AUDITIONS
+• Monologue library — keep your book warm and ready
+• Rehearsal journal — what worked, what didn't, what the room said
+
+Your scripts and notes stay on your device. No account required.
+
+From table read to callback: walk in SceneReady.
+-----------------------------------------------------
+
+CATEGORY: Productivity (or Art & Design — match iOS)
+PRIVACY POLICY URL (verified live 2026-08-15): https://texas0418.github.io/SceneReady/privacy.html
+
+GRAPHIC ASSETS (expo/store/): icon + feature graphic DONE; screenshots-android/ from release APK this run
+
+DATA SAFETY (verify at submission)
+- Scripts/notes/journal local to device
+- Check whether AI scene partner TTS is on-device (expo-speech) or a network call — declare accordingly
+- Purchases: check RevenueCat/Play products in app before declaring
+
+CONTENT RATING: Everyone (user-imported scripts are private content)
+
+RELEASE NOTES (first release)
+SceneReady arrives on Android: annotate your sides, break down the character, run lines with a scene partner, and walk in ready.
