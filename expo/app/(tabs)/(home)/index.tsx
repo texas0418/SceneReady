@@ -26,6 +26,8 @@ import {
   ChevronRight,
   Star,
   Pin,
+  Brain,
+  Settings,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
@@ -136,6 +138,16 @@ const tools: ToolCard[] = [
     route: '/sides-annotation',
     gradient: ['rgba(144,202,249,0.12)', Colors.card],
     accentColor: '#90CAF9',
+  },
+  {
+    id: 'memorization',
+    title: 'Line Memorization',
+    subtitle: 'Drill until off-book',
+    icon: <Brain size={22} color="#7986CB" />,
+    smallIcon: (c: string) => <Brain size={18} color={c} />,
+    route: '/line-memorization',
+    gradient: ['rgba(121,134,203,0.12)', Colors.card],
+    accentColor: '#7986CB',
   },
   {
     id: 'warmups',
@@ -332,14 +344,28 @@ export default function HomeScreen() {
         <Animated.View
           style={[
             styles.header,
+            styles.headerRow,
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
             },
           ]}
         >
-          <Text style={[styles.greeting, width >= 600 && styles.greetingLarge]}>Actor&apos;s Toolkit</Text>
-          <Text style={styles.subtitle}>Everything you need. One app.</Text>
+          <View style={styles.headerTextWrap}>
+            <Text style={[styles.greeting, width >= 600 && styles.greetingLarge]}>Actor&apos;s Toolkit</Text>
+            <Text style={styles.subtitle}>Everything you need. One app.</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.settingsBtn}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/settings' as any);
+            }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            testID="settings-btn"
+          >
+            <Settings size={22} color={Colors.textSecondary} />
+          </TouchableOpacity>
         </Animated.View>
 
         {/* Quick Access - Pinned Tools */}
@@ -464,6 +490,18 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: 16,
     paddingBottom: 24,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  headerTextWrap: {
+    flex: 1,
+  },
+  settingsBtn: {
+    padding: 8,
+    marginTop: 6,
   },
   greeting: {
     fontSize: 32,

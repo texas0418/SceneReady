@@ -20,6 +20,7 @@ import {
   Eye,
   Wind,
   CalendarCheck,
+  Brain,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 
@@ -55,6 +56,14 @@ const practiceTools = [
     icon: <Timer size={22} color="#FFB74D" />,
     route: '/cold-read-timer',
     color: 'rgba(255,183,77,0.12)',
+  },
+  {
+    id: 'memorization',
+    title: 'Line Memorization',
+    description: 'Hide your lines and drill off-book',
+    icon: <Brain size={22} color="#7986CB" />,
+    route: '/line-memorization',
+    color: 'rgba(121,134,203,0.12)',
   },
   {
     id: 'self-tape',
