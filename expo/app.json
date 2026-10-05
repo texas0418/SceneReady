@@ -31,8 +31,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0F0F0F"
       },
-      "package": "com.sceneready.app",
-      "versionCode": 1
+      "package": "com.page4films.sceneready",
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
