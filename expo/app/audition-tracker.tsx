@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Share,
+  Linking,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import {
@@ -33,9 +34,44 @@ import {
   ArrowUpCircle,
   XCircle,
   Star,
+  CalendarPlus,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useAuditionTracker, Audition } from '@/providers/AuditionTrackerProvider';
+
+// Build a Google Calendar "create event" link from an audition. Opens in the
+// browser or Google Calendar with no extra native module. When the free-text
+// date and time parse cleanly we prefill a one-hour slot; otherwise we leave
+// the time blank and let the actor set it.
+function toGCalDate(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return (
+    `${d.getUTCFullYear()}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}` +
+    `T${p(d.getUTCHours())}${p(d.getUTCMinutes())}${p(d.getUTCSeconds())}Z`
+  );
+}
+
+function buildCalendarUrl(a: Audition): string {
+  const title = `Audition: ${a.projectName}${a.role ? ` (${a.role})` : ''}`;
+  const details = [
+    a.role ? `Role: ${a.role}` : '',
+    a.castingDirector ? `Casting: ${a.castingDirector}` : '',
+    a.type ? `Type: ${a.type}` : '',
+    a.sides ? `Sides: ${a.sides}` : '',
+    a.notes ? `Notes: ${a.notes}` : '',
+  ].filter(Boolean).join('\n');
+
+  const params = ['action=TEMPLATE', `text=${encodeURIComponent(title)}`];
+  if (details) params.push(`details=${encodeURIComponent(details)}`);
+  if (a.location) params.push(`location=${encodeURIComponent(a.location)}`);
+
+  const parsed = a.date ? new Date(`${a.date} ${a.time || ''}`.trim()) : null;
+  if (parsed && !Number.isNaN(parsed.getTime())) {
+    const end = new Date(parsed.getTime() + 60 * 60 * 1000);
+    params.push(`dates=${toGCalDate(parsed)}/${toGCalDate(end)}`);
+  }
+  return `https://calendar.google.com/calendar/render?${params.join('&')}`;
+}
 
 const AUDITION_TYPES: { value: Audition['type']; label: string; icon: any; color: string }[] = [
   { value: 'film', label: 'Film', icon: Film, color: '#64B5F6' },
@@ -467,6 +503,18 @@ export default function AuditionTrackerScreen() {
                     >
                       <Share2 size={16} color={Colors.accent} />
                       <Text style={styles.actionBtnText}>Share</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.actionBtn}
+                      onPress={() => {
+                        Linking.openURL(buildCalendarUrl(audition)).catch(() =>
+                          Alert.alert('Could Not Open Calendar', 'No app is available to open the calendar link.')
+                        );
+                      }}
+                      testID="add-to-calendar"
+                    >
+                      <CalendarPlus size={16} color={Colors.accent} />
+                      <Text style={styles.actionBtnText}>Calendar</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.actionBtn}

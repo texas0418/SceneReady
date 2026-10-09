@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  Switch,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import * as Speech from 'expo-speech';
@@ -21,10 +22,18 @@ import {
   ChevronLeft,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
+import { useSettings } from '@/providers/SettingsProvider';
 
 interface SceneLine {
   character: string;
   line: string;
+}
+
+// A hands-free pass leaves a gap on your lines so you can say them aloud before
+// the partner continues. Roughly speaking pace, with a sensible floor.
+function pauseForLine(line: string): number {
+  const words = line.split(/\s+/).filter(Boolean).length;
+  return Math.max(1600, words * 420);
 }
 
 // eslint-disable-next-line max-lines-per-function -- tracked in #2
@@ -37,9 +46,35 @@ export default function AIScenePartner() {
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasPlayedCurrent, setHasPlayedCurrent] = useState(false);
+  const { settings } = useSettings();
   const [speechRate, setSpeechRate] = useState(0.9);
   const [showSettings, setShowSettings] = useState(false);
   const [isSetup, setIsSetup] = useState(true);
+  const [handsFree, setHandsFree] = useState(false);
+
+  const handsFreeRef = useRef(false);
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearAdvanceTimer = useCallback(() => {
+    if (advanceTimer.current) {
+      clearTimeout(advanceTimer.current);
+      advanceTimer.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    handsFreeRef.current = handsFree;
+  }, [handsFree]);
+
+  // Seed the in-scene rate from the saved default once settings load.
+  useEffect(() => {
+    setSpeechRate(settings.speechRate);
+  }, [settings.speechRate]);
+
+  useEffect(() => () => {
+    Speech.stop();
+    clearAdvanceTimer();
+  }, [clearAdvanceTimer]);
 
     // eslint-disable-next-line complexity -- tracked in #2
   const parseScript = useCallback(() => {
@@ -219,7 +254,20 @@ export default function AIScenePartner() {
       setHasPlayedCurrent(true);
 
       if (line.character.toUpperCase() === yourCharacter.trim().toUpperCase()) {
-        setIsPlaying(false);
+        if (handsFreeRef.current) {
+          setIsPlaying(true);
+          clearAdvanceTimer();
+          advanceTimer.current = setTimeout(() => {
+            const nextIndex = index + 1;
+            if (nextIndex < parsedLines.length) {
+              speakLine(nextIndex);
+            } else {
+              setIsPlaying(false);
+            }
+          }, pauseForLine(line.line));
+        } else {
+          setIsPlaying(false);
+        }
         return;
       }
 
@@ -227,6 +275,7 @@ export default function AIScenePartner() {
       Speech.speak(line.line, {
         rate: speechRate,
         pitch: 1.0,
+        voice: settings.voiceId ?? undefined,
         onDone: () => {
           const nextIndex = index + 1;
           if (nextIndex < parsedLines.length) {
@@ -240,13 +289,14 @@ export default function AIScenePartner() {
         },
       });
     },
-    [parsedLines, yourCharacter, speechRate]
+    [parsedLines, yourCharacter, speechRate, settings.voiceId, clearAdvanceTimer]
   );
 
   const handlePlay = () => {
     if (isPlaying) {
-      // Currently speaking — pause
+      // Currently speaking or waiting on your line: pause
       Speech.stop();
+      clearAdvanceTimer();
       setIsPlaying(false);
     } else if (hasPlayedCurrent && currentLineIndex < parsedLines.length - 1) {
       // Current line already played/read — advance to next
@@ -262,6 +312,7 @@ export default function AIScenePartner() {
 
   const handleNext = () => {
     Speech.stop();
+    clearAdvanceTimer();
     setIsPlaying(false);
     const next = Math.min(currentLineIndex + 1, parsedLines.length - 1);
     setCurrentLineIndex(next);
@@ -270,6 +321,7 @@ export default function AIScenePartner() {
 
   const handleReset = () => {
     Speech.stop();
+    clearAdvanceTimer();
     setIsPlaying(false);
     setHasPlayedCurrent(false);
     setIsSetup(true);
@@ -384,6 +436,22 @@ export default function AIScenePartner() {
                   </Text>
                 </TouchableOpacity>
               ))}
+            </View>
+
+            <View style={styles.handsFreeRow}>
+              <View style={styles.handsFreeText}>
+                <Text style={styles.handsFreeTitle}>Hands-Free Run-Through</Text>
+                <Text style={styles.handsFreeHint}>
+                  Keep playing through your lines, pausing so you can say them aloud
+                </Text>
+              </View>
+              <Switch
+                value={handsFree}
+                onValueChange={setHandsFree}
+                trackColor={{ false: Colors.border, true: Colors.accentDark }}
+                thumbColor={Platform.OS === 'android' ? (handsFree ? Colors.accent : Colors.textMuted) : undefined}
+                testID="hands-free-toggle"
+              />
             </View>
           </View>
         )}
@@ -588,6 +656,30 @@ const styles = StyleSheet.create({
   },
   rateBtnTextActive: {
     color: Colors.accent,
+  },
+  handsFreeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 18,
+    paddingTop: 16,
+    borderTopWidth: 0.5,
+    borderTopColor: Colors.border,
+  },
+  handsFreeText: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  handsFreeTitle: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: Colors.textPrimary,
+    marginBottom: 3,
+  },
+  handsFreeHint: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    lineHeight: 16,
   },
   linesContainer: {
     gap: 8,

@@ -27,6 +27,8 @@ import {
   ChevronLeft,
   Share2,
   Pencil,
+  Search,
+  X,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useRehearsalJournal, JournalEntry } from '@/providers/RehearsalJournalProvider';
@@ -59,6 +61,7 @@ export default function RehearsalJournalScreen() {
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
   const formAnim = useRef(new Animated.Value(0)).current;
 
   const [title, setTitle] = useState('');
@@ -178,6 +181,14 @@ export default function RehearsalJournalScreen() {
     inputRange: [0, 1],
     outputRange: [0, 950],
   });
+
+  const query = search.trim().toLowerCase();
+  const visibleEntries = query
+    ? entries.filter((e) =>
+        [e.title, e.notes, e.whatWorked, e.toExplore, e.emotionalTriggers, getTypeConfig(e.type).label]
+          .some((v) => (v || '').toLowerCase().includes(query))
+      )
+    : entries;
 
   return (
     <KeyboardAvoidingView
@@ -322,6 +333,25 @@ export default function RehearsalJournalScreen() {
         </View>
         )}
 
+        {entries.length > 0 && !showForm && (
+          <View style={styles.searchInput}>
+            <Search size={18} color={Colors.textMuted} />
+            <TextInput
+              style={styles.searchField}
+              placeholder="Search entries..."
+              placeholderTextColor={Colors.textMuted}
+              value={search}
+              onChangeText={setSearch}
+              testID="journal-search"
+            />
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')}>
+                <X size={16} color={Colors.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {entries.length === 0 && !showForm && (
           <View style={styles.emptyState}>
             <Calendar size={48} color={Colors.textMuted} />
@@ -332,7 +362,7 @@ export default function RehearsalJournalScreen() {
           </View>
         )}
 
-        {entries.map((entry) => {
+        {visibleEntries.map((entry) => {
           const typeConfig = getTypeConfig(entry.type);
           const moodConfig = getMoodConfig(entry.mood);
           const MoodIcon = moodConfig.icon;
@@ -420,6 +450,10 @@ export default function RehearsalJournalScreen() {
           );
         })}
 
+        {entries.length > 0 && !showForm && visibleEntries.length === 0 && (
+          <Text style={styles.noMatch}>{`No entries match "${search}"`}</Text>
+        )}
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </KeyboardAvoidingView>
@@ -452,6 +486,29 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600' as const,
     color: Colors.accent,
+  },
+  searchInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.card,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 42,
+    gap: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  searchField: {
+    flex: 1,
+    fontSize: 15,
+    color: Colors.textPrimary,
+  },
+  noMatch: {
+    fontSize: 14,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    paddingTop: 30,
   },
   formWrap: {},
   form: {
