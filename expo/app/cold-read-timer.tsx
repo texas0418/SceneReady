@@ -13,6 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { Play, Pause, RotateCcw, Clock, Minus, Plus, AlertTriangle, ChevronLeft,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
+import { recordToolUseCompleted } from '@/lib/review';
 
 type Phase = 'setup' | 'prep' | 'perform' | 'done';
 
@@ -80,6 +81,12 @@ export default function ColdReadTimer() {
       pulseAnim.setValue(1);
     }
   }, [phase, startPulse, pulseAnim]);
+
+  useEffect(() => {
+    // A full prep + perform cycle just finished; count it toward the one-time
+    // review ask. Fires only on the transition into 'done', never on mount.
+    if (phase === 'done') recordToolUseCompleted();
+  }, [phase]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
