@@ -29,6 +29,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
+import MoreApps from '@/components/MoreApps';
 import { useFavorites } from '@/providers/FavoritesProvider';
 
 const CARD_GAP = 12;
@@ -448,6 +449,8 @@ export default function HomeScreen() {
             </Animated.View>
           ))}
         </View>
+
+        <MoreApps />
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
