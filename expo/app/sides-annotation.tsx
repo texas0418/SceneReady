@@ -13,6 +13,7 @@ import {
   Modal,
   ActivityIndicator,
   Animated,
+  Share,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import {
@@ -28,11 +29,13 @@ import {
   MessageSquare,
   Heart,
   Bold,
+  Share2,
 } from 'lucide-react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import Colors from '@/constants/colors';
 import { useSidesAnnotation, Annotation, AnnotatedSide } from '@/providers/SidesAnnotationProvider';
 import { extractTextFromPDF, isPDFFile } from '@/utils/pdfExtractor';
+import { formatSide } from '@/utils/exporters';
 
 const ANNOTATION_TYPES: { value: Annotation['type']; label: string; color: string; icon: React.ReactNode }[] = [
   { value: 'beat', label: 'Beat', color: '#E8A838', icon: <Bookmark size={16} color="#E8A838" /> },
@@ -366,6 +369,19 @@ export default function SidesAnnotationScreen() {
             headerLeft: () => (
               <TouchableOpacity onPress={() => { setMode('list'); setActiveSideId(null); }} style={{ padding: 4 }}>
                 <X size={22} color={Colors.accent} />
+              </TouchableOpacity>
+            ),
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={async () => {
+                  try {
+                    await Share.share({ message: formatSide(activeSide) });
+                  } catch {}
+                }}
+                style={{ padding: 4 }}
+                testID="share-side"
+              >
+                <Share2 size={20} color={Colors.accent} />
               </TouchableOpacity>
             ),
           }}
